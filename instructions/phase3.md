@@ -1,9 +1,11 @@
 # Phase 3: TODO Feature Implementation
 
 ## Objective
+
 Implement complete TODO functionality including API routes, list view with filtering, card component with status/priority indicators, and add/edit dialogs.
 
 ## Prerequisites
+
 - Phase 1 and 2 completed
 - Authentication working
 - Main layout and sidebar functional
@@ -15,81 +17,77 @@ Implement complete TODO functionality including API routes, list view with filte
 Create `app/api/todos/route.ts`:
 
 ```typescript
-import { NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
-import { TodoStatus, Priority } from "@prisma/client"
+import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { TodoStatus, Priority } from '@prisma/client';
 
 export async function GET(request: Request) {
   try {
-    const session = await getServerSession(authOptions)
-    
+    const session = await getServerSession(authOptions);
+
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url)
-    const status = searchParams.get("status") as TodoStatus | null
-    const priority = searchParams.get("priority") as Priority | null
+    const { searchParams } = new URL(request.url);
+    const status = searchParams.get('status') as TodoStatus | null;
+    const priority = searchParams.get('priority') as Priority | null;
 
     const where: { userId: string; status?: TodoStatus; priority?: Priority } = {
-      userId: session.user.id
-    }
+      userId: session.user.id,
+    };
 
-    if (status && status !== "ALL") {
-      where.status = status
+    if (status && status !== 'ALL') {
+      where.status = status;
     }
-    if (priority && priority !== "ALL") {
-      where.priority = priority
+    if (priority && priority !== 'ALL') {
+      where.priority = priority;
     }
 
     const todos = await prisma.todo.findMany({
       where,
-      orderBy: [
-        { status: "asc" },
-        { priority: "desc" },
-        { createdAt: "desc" }
-      ]
-    })
+      orderBy: [{ status: 'asc' }, { priority: 'desc' }, { createdAt: 'desc' }],
+    });
 
-    return NextResponse.json(todos)
+    return NextResponse.json(todos);
   } catch (error) {
-    console.error("GET todos error:", error)
-    return NextResponse.json({ error: "Failed to fetch todos" }, { status: 500 })
+    console.error('GET todos error:', error);
+    return NextResponse.json({ error: 'Failed to fetch todos' }, { status: 500 });
   }
 }
 
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions)
-    
+    const session = await getServerSession(authOptions);
+
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json()
-    const { title, description, status, priority, dueDate } = body
+    const body = await request.json();
+    const { title, description, status, priority, dueDate } = body;
 
     if (!title?.trim()) {
-      return NextResponse.json({ error: "Title is required" }, { status: 400 })
+      return NextResponse.json({ error: 'Title is required' }, { status: 400 });
     }
 
     const todo = await prisma.todo.create({
       data: {
         title: title.trim(),
         description: description?.trim() || null,
-        status: status || "PENDING",
-        priority: priority || "MEDIUM",
+        status: status || 'PENDING',
+        priority: priority || 'MEDIUM',
         dueDate: dueDate ? new Date(dueDate) : null,
-        userId: session.user.id
-      }
-    })
+        userId: session.user.id,
+      },
+    });
 
-    return NextResponse.json(todo, { status: 201 })
+    return NextResponse.json(todo, { status: 201 });
   } catch (error) {
-    console.error("POST todo error:", error)
-    return NextResponse.json({ error: "Failed to create todo" }, { status: 500 })
+    console.error('POST todo error:', error);
+    return NextResponse.json({ error: 'Failed to create todo' }, { status: 500 });
   }
 }
 ```
@@ -97,69 +95,63 @@ export async function POST(request: Request) {
 Create `app/api/todos/[id]/route.ts`:
 
 ```typescript
-import { NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
+import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getServerSession(authOptions)
-    
+    const session = await getServerSession(authOptions);
+
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = await params
+    const { id } = await params;
 
     const todo = await prisma.todo.findFirst({
       where: {
         id,
-        userId: session.user.id
-      }
-    })
+        userId: session.user.id,
+      },
+    });
 
     if (!todo) {
-      return NextResponse.json({ error: "Todo not found" }, { status: 404 })
+      return NextResponse.json({ error: 'Todo not found' }, { status: 404 });
     }
 
-    return NextResponse.json(todo)
+    return NextResponse.json(todo);
   } catch (error) {
-    console.error("GET todo error:", error)
-    return NextResponse.json({ error: "Failed to fetch todo" }, { status: 500 })
+    console.error('GET todo error:', error);
+    return NextResponse.json({ error: 'Failed to fetch todo' }, { status: 500 });
   }
 }
 
-export async function PATCH(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getServerSession(authOptions)
-    
+    const session = await getServerSession(authOptions);
+
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = await params
-    const body = await request.json()
+    const { id } = await params;
+    const body = await request.json();
 
     // Verify ownership
     const existing = await prisma.todo.findFirst({
       where: {
         id,
-        userId: session.user.id
-      }
-    })
+        userId: session.user.id,
+      },
+    });
 
     if (!existing) {
-      return NextResponse.json({ error: "Todo not found" }, { status: 404 })
+      return NextResponse.json({ error: 'Todo not found' }, { status: 404 });
     }
 
-    const { title, description, status, priority, dueDate } = body
+    const { title, description, status, priority, dueDate } = body;
 
     const todo = await prisma.todo.update({
       where: { id },
@@ -168,50 +160,47 @@ export async function PATCH(
         ...(description !== undefined && { description: description?.trim() || null }),
         ...(status !== undefined && { status }),
         ...(priority !== undefined && { priority }),
-        ...(dueDate !== undefined && { dueDate: dueDate ? new Date(dueDate) : null })
-      }
-    })
+        ...(dueDate !== undefined && { dueDate: dueDate ? new Date(dueDate) : null }),
+      },
+    });
 
-    return NextResponse.json(todo)
+    return NextResponse.json(todo);
   } catch (error) {
-    console.error("PATCH todo error:", error)
-    return NextResponse.json({ error: "Failed to update todo" }, { status: 500 })
+    console.error('PATCH todo error:', error);
+    return NextResponse.json({ error: 'Failed to update todo' }, { status: 500 });
   }
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getServerSession(authOptions)
-    
+    const session = await getServerSession(authOptions);
+
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = await params
+    const { id } = await params;
 
     // Verify ownership
     const existing = await prisma.todo.findFirst({
       where: {
         id,
-        userId: session.user.id
-      }
-    })
+        userId: session.user.id,
+      },
+    });
 
     if (!existing) {
-      return NextResponse.json({ error: "Todo not found" }, { status: 404 })
+      return NextResponse.json({ error: 'Todo not found' }, { status: 404 });
     }
 
     await prisma.todo.delete({
-      where: { id }
-    })
+      where: { id },
+    });
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("DELETE todo error:", error)
-    return NextResponse.json({ error: "Failed to delete todo" }, { status: 500 })
+    console.error('DELETE todo error:', error);
+    return NextResponse.json({ error: 'Failed to delete todo' }, { status: 500 });
   }
 }
 ```
@@ -223,12 +212,12 @@ export async function DELETE(
 Create `hooks/use-todos.ts`:
 
 ```typescript
-"use client"
+'use client';
 
-import { useEffect, useCallback } from "react"
-import { useTodoStore } from "@/stores/todo-store"
-import { Todo, TodoStatus, Priority } from "@prisma/client"
-import { toast } from "sonner"
+import { useEffect, useCallback } from 'react';
+import { useTodoStore } from '@/stores/todo-store';
+import { Todo, TodoStatus, Priority } from '@prisma/client';
+import { toast } from 'sonner';
 
 export function useTodos() {
   const {
@@ -242,117 +231,129 @@ export function useTodos() {
     deleteTodo,
     setFilter,
     setLoading,
-    setError
-  } = useTodoStore()
+    setError,
+  } = useTodoStore();
 
   const fetchTodos = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    
-    try {
-      const params = new URLSearchParams()
-      if (filter.status !== "ALL") params.set("status", filter.status)
-      if (filter.priority !== "ALL") params.set("priority", filter.priority)
+    setLoading(true);
+    setError(null);
 
-      const response = await fetch(`/api/todos?${params}`)
-      
+    try {
+      const params = new URLSearchParams();
+      if (filter.status !== 'ALL') params.set('status', filter.status);
+      if (filter.priority !== 'ALL') params.set('priority', filter.priority);
+
+      const response = await fetch(`/api/todos?${params}`);
+
       if (!response.ok) {
-        throw new Error("Failed to fetch todos")
+        throw new Error('Failed to fetch todos');
       }
 
-      const data = await response.json()
-      setTodos(data)
+      const data = await response.json();
+      setTodos(data);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to fetch todos"
-      setError(message)
-      toast.error(message)
+      const message = err instanceof Error ? err.message : 'Failed to fetch todos';
+      setError(message);
+      toast.error(message);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [filter.status, filter.priority, setTodos, setLoading, setError])
+  }, [filter.status, filter.priority, setTodos, setLoading, setError]);
 
-  const createTodo = useCallback(async (data: {
-    title: string
-    description?: string
-    status?: TodoStatus
-    priority?: Priority
-    dueDate?: string
-  }) => {
-    try {
-      const response = await fetch("/api/todos", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      })
+  const createTodo = useCallback(
+    async (data: {
+      title: string;
+      description?: string;
+      status?: TodoStatus;
+      priority?: Priority;
+      dueDate?: string;
+    }) => {
+      try {
+        const response = await fetch('/api/todos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
 
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Failed to create todo")
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to create todo');
+        }
+
+        const todo = await response.json();
+        addTodo(todo);
+        toast.success('Todo created successfully');
+        return todo;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to create todo';
+        toast.error(message);
+        throw err;
       }
+    },
+    [addTodo]
+  );
 
-      const todo = await response.json()
-      addTodo(todo)
-      toast.success("Todo created successfully")
-      return todo
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to create todo"
-      toast.error(message)
-      throw err
-    }
-  }, [addTodo])
+  const editTodo = useCallback(
+    async (id: string, data: Partial<Todo>) => {
+      try {
+        const response = await fetch(`/api/todos/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
 
-  const editTodo = useCallback(async (id: string, data: Partial<Todo>) => {
-    try {
-      const response = await fetch(`/api/todos/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      })
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to update todo');
+        }
 
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Failed to update todo")
+        const todo = await response.json();
+        updateTodo(id, todo);
+        toast.success('Todo updated successfully');
+        return todo;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to update todo';
+        toast.error(message);
+        throw err;
       }
+    },
+    [updateTodo]
+  );
 
-      const todo = await response.json()
-      updateTodo(id, todo)
-      toast.success("Todo updated successfully")
-      return todo
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to update todo"
-      toast.error(message)
-      throw err
-    }
-  }, [updateTodo])
+  const removeTodo = useCallback(
+    async (id: string) => {
+      try {
+        const response = await fetch(`/api/todos/${id}`, {
+          method: 'DELETE',
+        });
 
-  const removeTodo = useCallback(async (id: string) => {
-    try {
-      const response = await fetch(`/api/todos/${id}`, {
-        method: "DELETE"
-      })
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to delete todo');
+        }
 
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Failed to delete todo")
+        deleteTodo(id);
+        toast.success('Todo deleted successfully');
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to delete todo';
+        toast.error(message);
+        throw err;
       }
+    },
+    [deleteTodo]
+  );
 
-      deleteTodo(id)
-      toast.success("Todo deleted successfully")
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to delete todo"
-      toast.error(message)
-      throw err
-    }
-  }, [deleteTodo])
-
-  const toggleStatus = useCallback(async (id: string, currentStatus: TodoStatus) => {
-    const newStatus = currentStatus === "COMPLETED" ? "PENDING" : "COMPLETED"
-    return editTodo(id, { status: newStatus })
-  }, [editTodo])
+  const toggleStatus = useCallback(
+    async (id: string, currentStatus: TodoStatus) => {
+      const newStatus = currentStatus === 'COMPLETED' ? 'PENDING' : 'COMPLETED';
+      return editTodo(id, { status: newStatus });
+    },
+    [editTodo]
+  );
 
   useEffect(() => {
-    fetchTodos()
-  }, [fetchTodos])
+    fetchTodos();
+  }, [fetchTodos]);
 
   return {
     todos,
@@ -364,8 +365,8 @@ export function useTodos() {
     editTodo,
     removeTodo,
     toggleStatus,
-    refetch: fetchTodos
-  }
+    refetch: fetchTodos,
+  };
 }
 ```
 
@@ -585,7 +586,7 @@ export function TodoCard({ todo, onToggle, onEdit, onDelete }: TodoCardProps) {
             <div className="flex flex-wrap items-center gap-2">
               <StatusBadge status={todo.status} />
               <PriorityBadge priority={todo.priority} />
-              
+
               {todo.dueDate && (
                 <span className={cn(
                   "inline-flex items-center text-xs text-muted-foreground",
@@ -690,7 +691,7 @@ export function TodoDialog({ open, onOpenChange, todo, onSubmit }: TodoDialogPro
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!title.trim()) return
 
     setIsLoading(true)
@@ -1177,6 +1178,7 @@ After completing this phase, verify:
 ## Next Phase Preview
 
 Phase 4 will cover:
+
 - Notes API routes (CRUD)
 - Rich text editor with TipTap
 - Notes list with search

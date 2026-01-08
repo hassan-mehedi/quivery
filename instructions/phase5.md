@@ -1,9 +1,11 @@
 # Phase 5: PWA Optimization and Docker Deployment
 
 ## Objective
+
 Finalize PWA configuration with proper icons and caching, create Docker configuration for Dokploy deployment, optimize production build, and perform final testing.
 
 ## Prerequisites
+
 - Phases 1-4 completed
 - All features working locally
 - Neon database connection working
@@ -36,7 +38,7 @@ async function generateIcons() {
       .resize(size, size)
       .png()
       .toFile(path.join(outputDir, `icon-${size}x${size}.png`));
-    
+
     console.log(`Generated icon-${size}x${size}.png`);
   }
 
@@ -45,7 +47,7 @@ async function generateIcons() {
     .resize(32, 32)
     .png()
     .toFile(path.join(__dirname, '../public/favicon.ico'));
-  
+
   console.log('Generated favicon.ico');
 
   // Generate Apple touch icon
@@ -53,7 +55,7 @@ async function generateIcons() {
     .resize(180, 180)
     .png()
     .toFile(path.join(__dirname, '../public/apple-touch-icon.png'));
-  
+
   console.log('Generated apple-touch-icon.png');
 }
 
@@ -193,7 +195,7 @@ Update `public/manifest.json`:
     },
     {
       "name": "New Note",
-      "short_name": "Note", 
+      "short_name": "Note",
       "url": "/?action=new-note",
       "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
     }
@@ -208,8 +210,8 @@ Update `public/manifest.json`:
 Update `next.config.ts`:
 
 ```typescript
-import type { NextConfig } from 'next'
-import withPWAInit from 'next-pwa'
+import type { NextConfig } from 'next';
+import withPWAInit from 'next-pwa';
 
 const withPWA = withPWAInit({
   dest: 'public',
@@ -224,9 +226,9 @@ const withPWA = withPWAInit({
         cacheName: 'google-fonts',
         expiration: {
           maxEntries: 10,
-          maxAgeSeconds: 365 * 24 * 60 * 60 // 1 year
-        }
-      }
+          maxAgeSeconds: 365 * 24 * 60 * 60, // 1 year
+        },
+      },
     },
     {
       urlPattern: /\.(?:eot|otf|ttc|ttf|woff|woff2|font.css)$/i,
@@ -235,9 +237,9 @@ const withPWA = withPWAInit({
         cacheName: 'static-font-assets',
         expiration: {
           maxEntries: 10,
-          maxAgeSeconds: 7 * 24 * 60 * 60 // 1 week
-        }
-      }
+          maxAgeSeconds: 7 * 24 * 60 * 60, // 1 week
+        },
+      },
     },
     {
       urlPattern: /\.(?:jpg|jpeg|gif|png|svg|ico|webp)$/i,
@@ -246,9 +248,9 @@ const withPWA = withPWAInit({
         cacheName: 'static-image-assets',
         expiration: {
           maxEntries: 64,
-          maxAgeSeconds: 24 * 60 * 60 // 1 day
-        }
-      }
+          maxAgeSeconds: 24 * 60 * 60, // 1 day
+        },
+      },
     },
     {
       urlPattern: /\/_next\/image\?url=.+$/i,
@@ -257,9 +259,9 @@ const withPWA = withPWAInit({
         cacheName: 'next-image',
         expiration: {
           maxEntries: 64,
-          maxAgeSeconds: 24 * 60 * 60 // 1 day
-        }
-      }
+          maxAgeSeconds: 24 * 60 * 60, // 1 day
+        },
+      },
     },
     {
       urlPattern: /\.(?:js)$/i,
@@ -268,9 +270,9 @@ const withPWA = withPWAInit({
         cacheName: 'static-js-assets',
         expiration: {
           maxEntries: 32,
-          maxAgeSeconds: 24 * 60 * 60 // 1 day
-        }
-      }
+          maxAgeSeconds: 24 * 60 * 60, // 1 day
+        },
+      },
     },
     {
       urlPattern: /\.(?:css)$/i,
@@ -279,9 +281,9 @@ const withPWA = withPWAInit({
         cacheName: 'static-style-assets',
         expiration: {
           maxEntries: 32,
-          maxAgeSeconds: 24 * 60 * 60 // 1 day
-        }
-      }
+          maxAgeSeconds: 24 * 60 * 60, // 1 day
+        },
+      },
     },
     {
       urlPattern: /\/_next\/static.+\.js$/i,
@@ -290,9 +292,9 @@ const withPWA = withPWAInit({
         cacheName: 'next-static-js',
         expiration: {
           maxEntries: 32,
-          maxAgeSeconds: 24 * 60 * 60 // 1 day
-        }
-      }
+          maxAgeSeconds: 24 * 60 * 60, // 1 day
+        },
+      },
     },
     {
       urlPattern: /\/api\/.*$/i,
@@ -301,20 +303,20 @@ const withPWA = withPWAInit({
         cacheName: 'api-cache',
         expiration: {
           maxEntries: 16,
-          maxAgeSeconds: 60 // 1 minute
+          maxAgeSeconds: 60, // 1 minute
         },
-        networkTimeoutSeconds: 10
-      }
-    }
-  ]
-})
+        networkTimeoutSeconds: 10,
+      },
+    },
+  ],
+});
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  output: 'standalone'
-}
+  output: 'standalone',
+};
 
-export default withPWA(nextConfig)
+export default withPWA(nextConfig);
 ```
 
 ---
@@ -447,7 +449,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - '3000:3000'
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
@@ -533,26 +535,29 @@ NEXTAUTH_URL="https://your-domain.com"
 Create `app/api/health/route.ts`:
 
 ```typescript
-import { NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
     // Check database connection
-    await prisma.$queryRaw`SELECT 1`
-    
+    await prisma.$queryRaw`SELECT 1`;
+
     return NextResponse.json({
-      status: "healthy",
+      status: 'healthy',
       timestamp: new Date().toISOString(),
-      database: "connected"
-    })
+      database: 'connected',
+    });
   } catch (error) {
-    console.error("Health check failed:", error)
-    return NextResponse.json({
-      status: "unhealthy",
-      timestamp: new Date().toISOString(),
-      database: "disconnected"
-    }, { status: 503 })
+    console.error('Health check failed:', error);
+    return NextResponse.json(
+      {
+        status: 'unhealthy',
+        timestamp: new Date().toISOString(),
+        database: 'disconnected',
+      },
+      { status: 503 }
+    );
   }
 }
 ```
@@ -638,7 +643,7 @@ Update `app/layout.tsx` metadata:
 export const metadata: Metadata = {
   title: {
     default: 'NeonTask - TODO & Notes',
-    template: '%s | NeonTask'
+    template: '%s | NeonTask',
   },
   description: 'A modern TODO and Notes application with neon aesthetics',
   manifest: '/manifest.json',
@@ -649,25 +654,26 @@ export const metadata: Metadata = {
     startupImage: [
       {
         url: '/splash/apple-splash-2048-2732.png',
-        media: '(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)'
-      }
-    ]
+        media:
+          '(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)',
+      },
+    ],
   },
   formatDetection: {
-    telephone: false
+    telephone: false,
   },
   openGraph: {
     type: 'website',
     siteName: 'NeonTask',
     title: 'NeonTask - TODO & Notes',
-    description: 'A modern TODO and Notes application with neon aesthetics'
+    description: 'A modern TODO and Notes application with neon aesthetics',
   },
   twitter: {
     card: 'summary_large_image',
     title: 'NeonTask - TODO & Notes',
-    description: 'A modern TODO and Notes application with neon aesthetics'
-  }
-}
+    description: 'A modern TODO and Notes application with neon aesthetics',
+  },
+};
 ```
 
 ---

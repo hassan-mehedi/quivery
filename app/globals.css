@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -47,35 +47,40 @@
 
 /* Neon glow utilities */
 .neon-glow-cyan {
-  box-shadow: 0 0 5px oklch(0.8 0.2 195 / 0.5),
-              0 0 20px oklch(0.8 0.2 195 / 0.3),
-              0 0 40px oklch(0.8 0.2 195 / 0.1);
+  box-shadow:
+    0 0 5px oklch(0.8 0.2 195 / 0.5),
+    0 0 20px oklch(0.8 0.2 195 / 0.3),
+    0 0 40px oklch(0.8 0.2 195 / 0.1);
 }
 
 .neon-glow-pink {
-  box-shadow: 0 0 5px oklch(0.75 0.22 330 / 0.5),
-              0 0 20px oklch(0.75 0.22 330 / 0.3),
-              0 0 40px oklch(0.75 0.22 330 / 0.1);
+  box-shadow:
+    0 0 5px oklch(0.75 0.22 330 / 0.5),
+    0 0 20px oklch(0.75 0.22 330 / 0.3),
+    0 0 40px oklch(0.75 0.22 330 / 0.1);
 }
 
 .neon-glow-purple {
-  box-shadow: 0 0 5px oklch(0.7 0.2 290 / 0.5),
-              0 0 20px oklch(0.7 0.2 290 / 0.3),
-              0 0 40px oklch(0.7 0.2 290 / 0.1);
+  box-shadow:
+    0 0 5px oklch(0.7 0.2 290 / 0.5),
+    0 0 20px oklch(0.7 0.2 290 / 0.3),
+    0 0 40px oklch(0.7 0.2 290 / 0.1);
 }
 
 .neon-text-glow {
-  text-shadow: 0 0 10px currentColor,
-               0 0 20px currentColor,
-               0 0 40px currentColor;
+  text-shadow:
+    0 0 10px currentColor,
+    0 0 20px currentColor,
+    0 0 40px currentColor;
 }
 
 /* Focus states with neon effect */
 .focus-neon:focus {
   outline: none;
-  box-shadow: 0 0 0 2px oklch(0.12 0.01 260),
-              0 0 0 4px oklch(0.75 0.18 180),
-              0 0 15px oklch(0.75 0.18 180 / 0.5);
+  box-shadow:
+    0 0 0 2px oklch(0.12 0.01 260),
+    0 0 0 4px oklch(0.75 0.18 180),
+    0 0 15px oklch(0.75 0.18 180 / 0.5);
 }
 
 /* Subtle background gradients */

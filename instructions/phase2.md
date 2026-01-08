@@ -1,9 +1,11 @@
 # Phase 2: Authentication and Layout
 
 ## Objective
+
 Create authentication pages (login/register), protected route middleware, and the main application layout with a responsive sidebar featuring neon styling.
 
 ## Prerequisites
+
 - Phase 1 completed
 - Prisma schema deployed
 - NextAuth configured
@@ -15,40 +17,38 @@ Create authentication pages (login/register), protected route middleware, and th
 Create `middleware.ts` in the project root:
 
 ```typescript
-import { withAuth } from "next-auth/middleware"
-import { NextResponse } from "next/server"
+import { withAuth } from 'next-auth/middleware';
+import { NextResponse } from 'next/server';
 
 export default withAuth(
   function middleware(req) {
-    return NextResponse.next()
+    return NextResponse.next();
   },
   {
     callbacks: {
       authorized: ({ token, req }) => {
-        const { pathname } = req.nextUrl
-        
+        const { pathname } = req.nextUrl;
+
         // Allow auth pages when not logged in
         if (pathname.startsWith('/login') || pathname.startsWith('/register')) {
-          return true
+          return true;
         }
-        
+
         // Allow API auth routes
         if (pathname.startsWith('/api/auth')) {
-          return true
+          return true;
         }
-        
+
         // Require auth for everything else
-        return !!token
-      }
-    }
+        return !!token;
+      },
+    },
   }
-)
+);
 
 export const config = {
-  matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|icons|manifest.json).*)'
-  ]
-}
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|icons|manifest.json).*)'],
+};
 ```
 
 ---
@@ -157,9 +157,9 @@ export default function LoginPage() {
           </CardContent>
 
           <CardFooter className="flex flex-col gap-4">
-            <Button 
-              type="submit" 
-              className="w-full neon-glow-cyan" 
+            <Button
+              type="submit"
+              className="w-full neon-glow-cyan"
               disabled={isLoading}
             >
               {isLoading ? (
@@ -174,8 +174,8 @@ export default function LoginPage() {
 
             <p className="text-sm text-muted-foreground text-center">
               Don&apos;t have an account?{" "}
-              <Link 
-                href="/register" 
+              <Link
+                href="/register"
                 className="text-primary hover:text-primary/80 transition-colors"
               >
                 Create one
@@ -337,9 +337,9 @@ export default function RegisterPage() {
           </CardContent>
 
           <CardFooter className="flex flex-col gap-4">
-            <Button 
-              type="submit" 
-              className="w-full neon-glow-purple" 
+            <Button
+              type="submit"
+              className="w-full neon-glow-purple"
               disabled={isLoading}
             >
               {isLoading ? (
@@ -354,8 +354,8 @@ export default function RegisterPage() {
 
             <p className="text-sm text-muted-foreground text-center">
               Already have an account?{" "}
-              <Link 
-                href="/login" 
+              <Link
+                href="/login"
                 className="text-primary hover:text-primary/80 transition-colors"
               >
                 Sign in
@@ -380,10 +380,10 @@ Create `components/layout/app-sidebar.tsx`:
 
 import { usePathname } from "next/navigation"
 import { signOut, useSession } from "next-auth/react"
-import { 
-  CheckSquare, 
-  FileText, 
-  LogOut, 
+import {
+  CheckSquare,
+  FileText,
+  LogOut,
   Settings,
   ChevronLeft,
   Zap
@@ -433,7 +433,7 @@ export function AppSidebar() {
     <>
       {/* Mobile overlay */}
       {isMobile && sidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
           onClick={toggleSidebar}
         />
@@ -458,7 +458,7 @@ export function AppSidebar() {
             </div>
             <span className="font-bold text-lg">NeonTask</span>
           </div>
-          
+
           {!isMobile && (
             <Button
               variant="ghost"
@@ -541,7 +541,7 @@ export function AppSidebar() {
                 <Settings className="mr-2 h-4 w-4" />
                 Settings
               </DropdownMenuItem>
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 className="cursor-pointer text-destructive focus:text-destructive"
                 onClick={() => signOut({ callbackUrl: "/login" })}
               >
@@ -637,7 +637,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     <div className="min-h-screen bg-gradient-dark">
       <AppSidebar />
       <MobileHeader />
-      
+
       <main
         className={cn(
           "min-h-screen transition-all duration-300 ease-in-out",
@@ -756,6 +756,7 @@ export function DashboardContent() {
 Create placeholder components:
 
 `components/todos/todo-view.tsx`:
+
 ```typescript
 export function TodoView() {
   return (
@@ -768,6 +769,7 @@ export function TodoView() {
 ```
 
 `components/notes/notes-view.tsx`:
+
 ```typescript
 export function NotesView() {
   return (
@@ -803,6 +805,7 @@ After completing this phase, verify:
 ## Next Phase Preview
 
 Phase 3 will cover:
+
 - TODO API routes (CRUD operations)
 - TODO list component with filtering
 - TODO card with status and priority badges

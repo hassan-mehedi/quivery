@@ -1,9 +1,11 @@
 # Phase 4: Notes Feature Implementation
 
 ## Objective
+
 Implement complete Notes functionality including API routes, rich text editor with TipTap, notes list with search, tag management, and responsive note detail view.
 
 ## Prerequisites
+
 - Phases 1-3 completed
 - TipTap dependencies installed (from Phase 1)
 
@@ -14,77 +16,77 @@ Implement complete Notes functionality including API routes, rich text editor wi
 Create `app/api/notes/route.ts`:
 
 ```typescript
-import { NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
+import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(request: Request) {
   try {
-    const session = await getServerSession(authOptions)
-    
+    const session = await getServerSession(authOptions);
+
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url)
-    const search = searchParams.get("search")
-    const tagIds = searchParams.get("tags")?.split(",").filter(Boolean)
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get('search');
+    const tagIds = searchParams.get('tags')?.split(',').filter(Boolean);
 
     const notes = await prisma.note.findMany({
       where: {
         userId: session.user.id,
         ...(search && {
           OR: [
-            { title: { contains: search, mode: "insensitive" } },
-            { content: { contains: search, mode: "insensitive" } }
-          ]
+            { title: { contains: search, mode: 'insensitive' } },
+            { content: { contains: search, mode: 'insensitive' } },
+          ],
         }),
         ...(tagIds?.length && {
-          tags: { some: { tagId: { in: tagIds } } }
-        })
+          tags: { some: { tagId: { in: tagIds } } },
+        }),
       },
       include: { tags: { include: { tag: true } } },
-      orderBy: { updatedAt: "desc" }
-    })
+      orderBy: { updatedAt: 'desc' },
+    });
 
-    return NextResponse.json(notes)
+    return NextResponse.json(notes);
   } catch (error) {
-    console.error("GET notes error:", error)
-    return NextResponse.json({ error: "Failed to fetch notes" }, { status: 500 })
+    console.error('GET notes error:', error);
+    return NextResponse.json({ error: 'Failed to fetch notes' }, { status: 500 });
   }
 }
 
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions)
-    
+    const session = await getServerSession(authOptions);
+
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { title, content, tagIds } = await request.json()
+    const { title, content, tagIds } = await request.json();
 
     if (!title?.trim()) {
-      return NextResponse.json({ error: "Title is required" }, { status: 400 })
+      return NextResponse.json({ error: 'Title is required' }, { status: 400 });
     }
 
     const note = await prisma.note.create({
       data: {
         title: title.trim(),
-        content: content || "",
+        content: content || '',
         userId: session.user.id,
         ...(tagIds?.length && {
-          tags: { create: tagIds.map((tagId: string) => ({ tagId })) }
-        })
+          tags: { create: tagIds.map((tagId: string) => ({ tagId })) },
+        }),
       },
-      include: { tags: { include: { tag: true } } }
-    })
+      include: { tags: { include: { tag: true } } },
+    });
 
-    return NextResponse.json(note, { status: 201 })
+    return NextResponse.json(note, { status: 201 });
   } catch (error) {
-    console.error("POST note error:", error)
-    return NextResponse.json({ error: "Failed to create note" }, { status: 500 })
+    console.error('POST note error:', error);
+    return NextResponse.json({ error: 'Failed to create note' }, { status: 500 });
   }
 }
 ```
@@ -92,114 +94,105 @@ export async function POST(request: Request) {
 Create `app/api/notes/[id]/route.ts`:
 
 ```typescript
-import { NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
+import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = await params
+    const { id } = await params;
     const note = await prisma.note.findFirst({
       where: { id, userId: session.user.id },
-      include: { tags: { include: { tag: true } } }
-    })
+      include: { tags: { include: { tag: true } } },
+    });
 
     if (!note) {
-      return NextResponse.json({ error: "Note not found" }, { status: 404 })
+      return NextResponse.json({ error: 'Note not found' }, { status: 404 });
     }
 
-    return NextResponse.json(note)
+    return NextResponse.json(note);
   } catch (error) {
-    console.error("GET note error:", error)
-    return NextResponse.json({ error: "Failed to fetch note" }, { status: 500 })
+    console.error('GET note error:', error);
+    return NextResponse.json({ error: 'Failed to fetch note' }, { status: 500 });
   }
 }
 
-export async function PATCH(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = await params
+    const { id } = await params;
     const existing = await prisma.note.findFirst({
-      where: { id, userId: session.user.id }
-    })
+      where: { id, userId: session.user.id },
+    });
 
     if (!existing) {
-      return NextResponse.json({ error: "Note not found" }, { status: 404 })
+      return NextResponse.json({ error: 'Note not found' }, { status: 404 });
     }
 
-    const { title, content, tagIds } = await request.json()
+    const { title, content, tagIds } = await request.json();
 
-    const note = await prisma.$transaction(async (tx) => {
+    const note = await prisma.$transaction(async tx => {
       await tx.note.update({
         where: { id },
         data: {
           ...(title !== undefined && { title: title.trim() }),
-          ...(content !== undefined && { content })
-        }
-      })
+          ...(content !== undefined && { content }),
+        },
+      });
 
       if (tagIds !== undefined) {
-        await tx.noteTag.deleteMany({ where: { noteId: id } })
+        await tx.noteTag.deleteMany({ where: { noteId: id } });
         if (tagIds.length > 0) {
           await tx.noteTag.createMany({
-            data: tagIds.map((tagId: string) => ({ noteId: id, tagId }))
-          })
+            data: tagIds.map((tagId: string) => ({ noteId: id, tagId })),
+          });
         }
       }
 
       return tx.note.findUnique({
         where: { id },
-        include: { tags: { include: { tag: true } } }
-      })
-    })
+        include: { tags: { include: { tag: true } } },
+      });
+    });
 
-    return NextResponse.json(note)
+    return NextResponse.json(note);
   } catch (error) {
-    console.error("PATCH note error:", error)
-    return NextResponse.json({ error: "Failed to update note" }, { status: 500 })
+    console.error('PATCH note error:', error);
+    return NextResponse.json({ error: 'Failed to update note' }, { status: 500 });
   }
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = await params
+    const { id } = await params;
     const existing = await prisma.note.findFirst({
-      where: { id, userId: session.user.id }
-    })
+      where: { id, userId: session.user.id },
+    });
 
     if (!existing) {
-      return NextResponse.json({ error: "Note not found" }, { status: 404 })
+      return NextResponse.json({ error: 'Note not found' }, { status: 404 });
     }
 
-    await prisma.note.delete({ where: { id } })
-    return NextResponse.json({ success: true })
+    await prisma.note.delete({ where: { id } });
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("DELETE note error:", error)
-    return NextResponse.json({ error: "Failed to delete note" }, { status: 500 })
+    console.error('DELETE note error:', error);
+    return NextResponse.json({ error: 'Failed to delete note' }, { status: 500 });
   }
 }
 ```
@@ -211,63 +204,63 @@ export async function DELETE(
 Create `app/api/tags/route.ts`:
 
 ```typescript
-import { NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
+import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const tags = await prisma.tag.findMany({
       where: { userId: session.user.id },
-      orderBy: { name: "asc" }
-    })
+      orderBy: { name: 'asc' },
+    });
 
-    return NextResponse.json(tags)
+    return NextResponse.json(tags);
   } catch (error) {
-    console.error("GET tags error:", error)
-    return NextResponse.json({ error: "Failed to fetch tags" }, { status: 500 })
+    console.error('GET tags error:', error);
+    return NextResponse.json({ error: 'Failed to fetch tags' }, { status: 500 });
   }
 }
 
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { name, color } = await request.json()
+    const { name, color } = await request.json();
 
     if (!name?.trim()) {
-      return NextResponse.json({ error: "Name is required" }, { status: 400 })
+      return NextResponse.json({ error: 'Name is required' }, { status: 400 });
     }
 
     const existing = await prisma.tag.findFirst({
-      where: { name: name.trim(), userId: session.user.id }
-    })
+      where: { name: name.trim(), userId: session.user.id },
+    });
 
     if (existing) {
-      return NextResponse.json({ error: "Tag already exists" }, { status: 400 })
+      return NextResponse.json({ error: 'Tag already exists' }, { status: 400 });
     }
 
     const tag = await prisma.tag.create({
       data: {
         name: name.trim(),
-        color: color || "#8B5CF6",
-        userId: session.user.id
-      }
-    })
+        color: color || '#8B5CF6',
+        userId: session.user.id,
+      },
+    });
 
-    return NextResponse.json(tag, { status: 201 })
+    return NextResponse.json(tag, { status: 201 });
   } catch (error) {
-    console.error("POST tag error:", error)
-    return NextResponse.json({ error: "Failed to create tag" }, { status: 500 })
+    console.error('POST tag error:', error);
+    return NextResponse.json({ error: 'Failed to create tag' }, { status: 500 });
   }
 }
 ```
@@ -275,35 +268,32 @@ export async function POST(request: Request) {
 Create `app/api/tags/[id]/route.ts`:
 
 ```typescript
-import { NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
+import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = await params
+    const { id } = await params;
     const existing = await prisma.tag.findFirst({
-      where: { id, userId: session.user.id }
-    })
+      where: { id, userId: session.user.id },
+    });
 
     if (!existing) {
-      return NextResponse.json({ error: "Tag not found" }, { status: 404 })
+      return NextResponse.json({ error: 'Tag not found' }, { status: 404 });
     }
 
-    await prisma.tag.delete({ where: { id } })
-    return NextResponse.json({ success: true })
+    await prisma.tag.delete({ where: { id } });
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("DELETE tag error:", error)
-    return NextResponse.json({ error: "Failed to delete tag" }, { status: 500 })
+    console.error('DELETE tag error:', error);
+    return NextResponse.json({ error: 'Failed to delete tag' }, { status: 500 });
   }
 }
 ```
@@ -315,6 +305,7 @@ export async function DELETE(
 Create `hooks/use-notes.ts` - This hook manages all note and tag operations with auto-save functionality. Include methods for: fetchNotes, fetchTags, createNote, editNote, debouncedSave (for auto-save), removeNote, createTag, removeTag.
 
 Key implementation details:
+
 - Use debounce from utils for auto-save (1000ms delay)
 - Fetch notes with search query and tag filter params
 - Toast notifications for success/error
@@ -325,6 +316,7 @@ Key implementation details:
 ## Task 4.4: Create Rich Text Editor Component
 
 Create `components/notes/rich-text-editor.tsx` using TipTap with:
+
 - StarterKit for basic formatting
 - Placeholder extension
 - Highlight extension
@@ -337,11 +329,13 @@ Create `components/notes/rich-text-editor.tsx` using TipTap with:
 ## Task 4.5: Create Tag Components
 
 Create `components/notes/tag-badge.tsx`:
+
 - Display tag with custom color
 - Optional remove button
 - Selected state with ring indicator
 
 Create `components/notes/tag-selector.tsx`:
+
 - Popover with tag list
 - Create new tag form with color picker
 - 8 preset colors for selection
@@ -351,6 +345,7 @@ Create `components/notes/tag-selector.tsx`:
 ## Task 4.6: Create Note Card Component
 
 Create `components/notes/note-card.tsx`:
+
 - Show title and content preview (stripped HTML)
 - Display up to 3 tags with "+N" overflow
 - Show relative date
@@ -361,6 +356,7 @@ Create `components/notes/note-card.tsx`:
 ## Task 4.7: Create Note Editor Component
 
 Create `components/notes/note-editor.tsx`:
+
 - Editable title input
 - Rich text editor
 - Tag selector and display
@@ -373,6 +369,7 @@ Create `components/notes/note-editor.tsx`:
 ## Task 4.8: Update Notes View Component
 
 Replace `components/notes/notes-view.tsx`:
+
 - Mobile: Toggle between list and editor views
 - Desktop: Side-by-side layout (320px list + flexible editor)
 - Search input with icon
