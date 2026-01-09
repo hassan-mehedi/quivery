@@ -15,8 +15,8 @@
   --color-secondary-foreground: oklch(0.95 0.01 260);
   --color-muted: oklch(0.2 0.015 260);
   --color-muted-foreground: oklch(0.65 0.02 260);
-  --color-accent: oklch(0.7 0.2 320);
-  --color-accent-foreground: oklch(0.12 0.01 260);
+  --color-accent: oklch(0.22 0.04 260);
+  --color-accent-foreground: oklch(0.85 0.02 260);
   --color-destructive: oklch(0.6 0.22 25);
   --color-destructive-foreground: oklch(0.98 0.01 260);
   --color-border: oklch(0.28 0.025 260);
@@ -91,4 +91,48 @@
     oklch(0.1 0.02 280) 50%,
     oklch(0.12 0.01 260) 100%
   );
+}
+
+/* Editor prose styling */
+.prose {
+  --tw-prose-body: oklch(0.85 0.01 260);
+  --tw-prose-headings: oklch(0.95 0.01 260);
+  --tw-prose-links: oklch(0.75 0.18 180);
+  --tw-prose-bold: oklch(0.95 0.01 260);
+  --tw-prose-code: oklch(0.8 0.15 195);
+  --tw-prose-quotes: oklch(0.75 0.02 260);
+  --tw-prose-quote-borders: oklch(0.5 0.1 260);
+  --tw-prose-hr: oklch(0.3 0.02 260);
+  --tw-prose-th-borders: oklch(0.4 0.02 260);
+  --tw-prose-td-borders: oklch(0.3 0.02 260);
+}
+
+.prose :where(p):not(:where([class~="not-prose"] *)) {
+  color: var(--tw-prose-body);
+}
+
+.prose :where(h1, h2, h3, h4, h5, h6):not(:where([class~="not-prose"] *)) {
+  color: var(--tw-prose-headings);
+}
+
+.prose :where(strong):not(:where([class~="not-prose"] *)) {
+  color: var(--tw-prose-bold);
+}
+
+.prose :where(code):not(:where([class~="not-prose"] *)) {
+  color: var(--tw-prose-code);
+}
+
+.prose :where(blockquote):not(:where([class~="not-prose"] *)) {
+  color: var(--tw-prose-quotes);
+  border-left-color: var(--tw-prose-quote-borders);
+}
+
+/* Placeholder styling */
+.ProseMirror p.is-editor-empty:first-child::before {
+  color: oklch(0.45 0.02 260);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
 }

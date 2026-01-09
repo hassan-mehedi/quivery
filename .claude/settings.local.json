@@ -5,7 +5,11 @@
       "Bash(npx shadcn@latest init:*)",
       "Bash(npx shadcn@latest add:*)",
       "Bash(npx prisma init:*)",
-      "Bash(npx prisma generate:*)"
+      "Bash(npx prisma generate:*)",
+      "Bash(npm run format:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(npm run build:*)"
     ]
   }
 }
