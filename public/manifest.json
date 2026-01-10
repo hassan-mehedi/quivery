@@ -7,6 +7,7 @@
   "background_color": "#0a0a0f",
   "theme_color": "#06b6d4",
   "orientation": "portrait-primary",
+  "categories": ["productivity", "utilities"],
   "icons": [
     {
       "src": "/icons/icon-72x72.png",
@@ -55,6 +56,20 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "New Todo",
+      "short_name": "Todo",
+      "url": "/?action=new-todo",
+      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "New Note",
+      "short_name": "Note",
+      "url": "/?action=new-note",
+      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
     }
   ]
 }

@@ -10,7 +10,13 @@
       "Bash(ls:*)",
       "Bash(cat:*)",
       "Bash(npm run build:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(node scripts/convert-svg-to-png.js:*)",
+      "Bash(node scripts/generate-icons.js:*)",
+      "Bash(npm run lint)",
+      "Bash(dir:*)",
+      "Bash(findstr:*)",
+      "Bash(curl:*)"
     ]
   }
 }
