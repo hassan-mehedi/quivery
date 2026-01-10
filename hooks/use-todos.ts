@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useMemo } from 'react';
 import { useTodoStore } from '@/stores/todo-store';
 import { Todo, TodoStatus, Priority } from '@prisma/client';
 import { toast } from 'sonner';
@@ -11,14 +11,30 @@ export function useTodos() {
     isLoading,
     error,
     filter,
+    searchQuery,
+    focusedTodoId,
     setTodos,
     addTodo,
     updateTodo,
     deleteTodo,
     setFilter,
+    setSearchQuery,
+    setFocusedTodoId,
     setLoading,
     setError,
   } = useTodoStore();
+
+  // Filter todos client-side based on search query
+  const filteredTodos = useMemo(() => {
+    if (!searchQuery.trim()) return todos;
+
+    const query = searchQuery.toLowerCase();
+    return todos.filter(
+      todo =>
+        todo.title.toLowerCase().includes(query) ||
+        (todo.description && todo.description.toLowerCase().includes(query))
+    );
+  }, [todos, searchQuery]);
 
   const fetchTodos = useCallback(async () => {
     setLoading(true);
@@ -142,11 +158,16 @@ export function useTodos() {
   }, [fetchTodos]);
 
   return {
-    todos,
+    todos: filteredTodos,
+    allTodos: todos,
     isLoading,
     error,
     filter,
+    searchQuery,
+    focusedTodoId,
     setFilter,
+    setSearchQuery,
+    setFocusedTodoId,
     createTodo,
     editTodo,
     removeTodo,

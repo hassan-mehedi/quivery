@@ -9,11 +9,15 @@ interface TodoState {
     status: TodoStatus | 'ALL';
     priority: Priority | 'ALL';
   };
+  searchQuery: string;
+  focusedTodoId: string | null;
   setTodos: (todos: Todo[]) => void;
   addTodo: (todo: Todo) => void;
   updateTodo: (id: string, updates: Partial<Todo>) => void;
   deleteTodo: (id: string) => void;
   setFilter: (filter: Partial<TodoState['filter']>) => void;
+  setSearchQuery: (query: string) => void;
+  setFocusedTodoId: (id: string | null) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
 }
@@ -26,6 +30,8 @@ export const useTodoStore = create<TodoState>(set => ({
     status: 'ALL',
     priority: 'ALL',
   },
+  searchQuery: '',
+  focusedTodoId: null,
   setTodos: todos => set({ todos }),
   addTodo: todo => set(state => ({ todos: [todo, ...state.todos] })),
   updateTodo: (id, updates) =>
@@ -40,6 +46,8 @@ export const useTodoStore = create<TodoState>(set => ({
     set(state => ({
       filter: { ...state.filter, ...filter },
     })),
+  setSearchQuery: searchQuery => set({ searchQuery }),
+  setFocusedTodoId: focusedTodoId => set({ focusedTodoId }),
   setLoading: isLoading => set({ isLoading }),
   setError: error => set({ error }),
 }));

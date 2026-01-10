@@ -1,15 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Todo } from '@prisma/client';
 import { useTodos } from '@/hooks/use-todos';
 import { TodoCard } from './todo-card';
 import { TodoDialog } from './todo-dialog';
 import { TodoFilters } from './todo-filters';
+import { QuickAddInput } from './quick-add-input';
+import { SearchBar } from './search-bar';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, CheckSquare, Loader2 } from 'lucide-react';
+import { Plus, CheckSquare, Loader2, Keyboard } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,13 +24,28 @@ import {
 } from '@/components/ui/alert-dialog';
 
 export function TodoView() {
-  const { todos, isLoading, filter, setFilter, createTodo, editTodo, removeTodo, toggleStatus } =
-    useTodos();
+  const {
+    todos,
+    isLoading,
+    filter,
+    searchQuery,
+    focusedTodoId,
+    setFilter,
+    setSearchQuery,
+    setFocusedTodoId,
+    createTodo,
+    editTodo,
+    removeTodo,
+    toggleStatus,
+  } = useTodos();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [showShortcutsHint, setShowShortcutsHint] = useState(false);
+  const viewRef = useRef<HTMLDivElement>(null);
 
   const handleCreate = () => {
     setEditingTodo(null);
@@ -70,11 +87,112 @@ export function TodoView() {
     }
   };
 
+  const handleQuickAdd = async (title: string) => {
+    await createTodo({ title, status: 'PENDING', priority: 'MEDIUM' });
+    setShowQuickAdd(false);
+  };
+
+  const handleUpdate = async (id: string, updates: Partial<Todo>) => {
+    await editTodo(id, updates);
+  };
+
+  // Keyboard navigation
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      // Don't handle shortcuts if user is typing in an input
+      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) {
+        return;
+      }
+
+      // Quick add shortcuts
+      if (e.key === 'q' || e.key === 'Q' || e.key === 'n' || e.key === 'N') {
+        e.preventDefault();
+        setShowQuickAdd(true);
+        return;
+      }
+
+      // Show keyboard shortcuts hint
+      if (e.key === '?' && e.shiftKey) {
+        e.preventDefault();
+        setShowShortcutsHint(prev => !prev);
+        return;
+      }
+
+      // Escape to clear focus
+      if (e.key === 'Escape') {
+        setFocusedTodoId(null);
+        setShowShortcutsHint(false);
+        return;
+      }
+
+      // Navigation and actions on focused todo
+      if (todos.length === 0) return;
+
+      const currentIndex = focusedTodoId ? todos.findIndex(t => t.id === focusedTodoId) : -1;
+
+      // Arrow down - navigate to next todo
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        const nextIndex = currentIndex < todos.length - 1 ? currentIndex + 1 : 0;
+        setFocusedTodoId(todos[nextIndex].id);
+        return;
+      }
+
+      // Arrow up - navigate to previous todo
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        const prevIndex = currentIndex > 0 ? currentIndex - 1 : todos.length - 1;
+        setFocusedTodoId(todos[prevIndex].id);
+        return;
+      }
+
+      // Space - toggle completion
+      if (e.key === ' ' && focusedTodoId) {
+        e.preventDefault();
+        handleToggle(focusedTodoId);
+        return;
+      }
+
+      // Enter - open edit dialog
+      if (e.key === 'Enter' && focusedTodoId) {
+        e.preventDefault();
+        const todo = todos.find(t => t.id === focusedTodoId);
+        if (todo) handleEdit(todo);
+        return;
+      }
+
+      // Delete/Backspace - delete todo
+      if ((e.key === 'Delete' || e.key === 'Backspace') && focusedTodoId) {
+        e.preventDefault();
+        setDeleteId(focusedTodoId);
+        return;
+      }
+    },
+    [todos, focusedTodoId, setFocusedTodoId]
+  );
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
+
+  // Show shortcuts hint on first visit
+  useEffect(() => {
+    const hasSeenHint = localStorage.getItem('todo-shortcuts-hint-seen');
+    if (!hasSeenHint) {
+      setShowShortcutsHint(true);
+      setTimeout(() => {
+        setShowShortcutsHint(false);
+        localStorage.setItem('todo-shortcuts-hint-seen', 'true');
+      }, 5000);
+    }
+  }, []);
+
   const completedCount = todos.filter(t => t.status === 'COMPLETED').length;
   const totalCount = todos.length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" ref={viewRef}>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -87,11 +205,67 @@ export function TodoView() {
           </p>
         </div>
 
-        <Button onClick={handleCreate} className="neon-glow-cyan">
-          <Plus className="w-4 h-4 mr-2" />
-          Add Todo
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={() => setShowShortcutsHint(prev => !prev)}
+            variant="outline"
+            size="icon"
+            title="Keyboard shortcuts"
+          >
+            <Keyboard className="w-4 h-4" />
+          </Button>
+          <Button onClick={handleCreate} className="neon-glow-cyan">
+            <Plus className="w-4 h-4 mr-2" />
+            Add Todo
+          </Button>
+        </div>
       </div>
+
+      {/* Keyboard Shortcuts Hint */}
+      {showShortcutsHint && (
+        <div className="bg-neon-cyan/10 border border-neon-cyan/30 rounded-lg p-4">
+          <h3 className="font-semibold text-neon-cyan mb-2 flex items-center gap-2">
+            <Keyboard className="w-4 h-4" />
+            Keyboard Shortcuts
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+            <div>
+              <kbd className="px-2 py-1 bg-muted rounded text-xs mr-2">Q</kbd>
+              <span className="text-muted-foreground">Quick add todo</span>
+            </div>
+            <div>
+              <kbd className="px-2 py-1 bg-muted rounded text-xs mr-2">/</kbd>
+              <span className="text-muted-foreground">Focus search</span>
+            </div>
+            <div>
+              <kbd className="px-2 py-1 bg-muted rounded text-xs mr-2">↑↓</kbd>
+              <span className="text-muted-foreground">Navigate todos</span>
+            </div>
+            <div>
+              <kbd className="px-2 py-1 bg-muted rounded text-xs mr-2">Space</kbd>
+              <span className="text-muted-foreground">Toggle complete</span>
+            </div>
+            <div>
+              <kbd className="px-2 py-1 bg-muted rounded text-xs mr-2">Enter</kbd>
+              <span className="text-muted-foreground">Edit details</span>
+            </div>
+            <div>
+              <kbd className="px-2 py-1 bg-muted rounded text-xs mr-2">Del</kbd>
+              <span className="text-muted-foreground">Delete todo</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Search Bar */}
+      <SearchBar value={searchQuery} onChange={setSearchQuery} />
+
+      {/* Quick Add Input */}
+      <QuickAddInput
+        isVisible={showQuickAdd}
+        onSubmit={handleQuickAdd}
+        onCancel={() => setShowQuickAdd(false)}
+      />
 
       {/* Filters */}
       <TodoFilters
@@ -130,6 +304,8 @@ export function TodoView() {
               onToggle={handleToggle}
               onEdit={handleEdit}
               onDelete={setDeleteId}
+              onUpdate={handleUpdate}
+              isFocused={focusedTodoId === todo.id}
             />
           ))}
         </div>

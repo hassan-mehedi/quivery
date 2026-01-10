@@ -1,9 +1,12 @@
 'use client';
 
+import { useState, useRef, useEffect } from 'react';
 import { Todo } from '@prisma/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,19 +24,91 @@ interface TodoCardProps {
   onToggle: (id: string) => void;
   onEdit: (todo: Todo) => void;
   onDelete: (id: string) => void;
+  onUpdate: (id: string, updates: Partial<Todo>) => Promise<void>;
+  isFocused?: boolean;
 }
 
-export function TodoCard({ todo, onToggle, onEdit, onDelete }: TodoCardProps) {
+export function TodoCard({
+  todo,
+  onToggle,
+  onEdit,
+  onDelete,
+  onUpdate,
+  isFocused,
+}: TodoCardProps) {
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [isEditingDescription, setIsEditingDescription] = useState(false);
+  const [titleValue, setTitleValue] = useState(todo.title);
+  const [descriptionValue, setDescriptionValue] = useState(todo.description || '');
+  const titleInputRef = useRef<HTMLInputElement>(null);
+  const descriptionInputRef = useRef<HTMLTextAreaElement>(null);
+
   const isCompleted = todo.status === 'COMPLETED';
   const isCancelled = todo.status === 'CANCELLED';
   const isDimmed = isCompleted || isCancelled;
+
+  useEffect(() => {
+    setTitleValue(todo.title);
+    setDescriptionValue(todo.description || '');
+  }, [todo.title, todo.description]);
+
+  useEffect(() => {
+    if (isEditingTitle && titleInputRef.current) {
+      titleInputRef.current.focus();
+      titleInputRef.current.select();
+    }
+  }, [isEditingTitle]);
+
+  useEffect(() => {
+    if (isEditingDescription && descriptionInputRef.current) {
+      descriptionInputRef.current.focus();
+      descriptionInputRef.current.select();
+    }
+  }, [isEditingDescription]);
+
+  const handleTitleSave = async () => {
+    if (titleValue.trim() && titleValue !== todo.title) {
+      await onUpdate(todo.id, { title: titleValue.trim() });
+    } else {
+      setTitleValue(todo.title);
+    }
+    setIsEditingTitle(false);
+  };
+
+  const handleDescriptionSave = async () => {
+    if (descriptionValue !== (todo.description || '')) {
+      await onUpdate(todo.id, { description: descriptionValue || null });
+    }
+    setIsEditingDescription(false);
+  };
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleTitleSave();
+    } else if (e.key === 'Escape') {
+      setTitleValue(todo.title);
+      setIsEditingTitle(false);
+    }
+  };
+
+  const handleDescriptionKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      handleDescriptionSave();
+    } else if (e.key === 'Escape') {
+      setDescriptionValue(todo.description || '');
+      setIsEditingDescription(false);
+    }
+  };
 
   return (
     <Card
       className={cn(
         'group transition-all duration-200 border-border/50 hover:border-border',
         'bg-card/50 backdrop-blur-sm hover:bg-card/80',
-        isDimmed && 'opacity-60'
+        isDimmed && 'opacity-60',
+        isFocused && 'ring-2 ring-neon-cyan ring-offset-2 ring-offset-background'
       )}
     >
       <CardContent className="p-4">
@@ -52,14 +127,28 @@ export function TodoCard({ todo, onToggle, onEdit, onDelete }: TodoCardProps) {
           {/* Content */}
           <div className="flex-1 min-w-0 space-y-2">
             <div className="flex items-start justify-between gap-2">
-              <h3
-                className={cn(
-                  'font-medium text-foreground line-clamp-2',
-                  isCompleted && 'line-through text-muted-foreground'
-                )}
-              >
-                {todo.title}
-              </h3>
+              {isEditingTitle ? (
+                <Input
+                  ref={titleInputRef}
+                  value={titleValue}
+                  onChange={e => setTitleValue(e.target.value)}
+                  onBlur={handleTitleSave}
+                  onKeyDown={handleTitleKeyDown}
+                  className="h-auto py-1 px-2 text-base font-medium focus-neon"
+                />
+              ) : (
+                <h3
+                  onClick={() => !isDimmed && setIsEditingTitle(true)}
+                  className={cn(
+                    'font-medium text-foreground line-clamp-2',
+                    isCompleted && 'line-through text-muted-foreground',
+                    !isDimmed && 'cursor-text hover:text-neon-cyan transition-colors'
+                  )}
+                  title="Click to edit"
+                >
+                  {todo.title}
+                </h3>
+              )}
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -74,7 +163,7 @@ export function TodoCard({ todo, onToggle, onEdit, onDelete }: TodoCardProps) {
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={() => onEdit(todo)}>
                     <Pencil className="mr-2 h-4 w-4" />
-                    Edit
+                    Edit Details
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
@@ -88,15 +177,38 @@ export function TodoCard({ todo, onToggle, onEdit, onDelete }: TodoCardProps) {
               </DropdownMenu>
             </div>
 
-            {todo.description && (
+            {isEditingDescription ? (
+              <Textarea
+                ref={descriptionInputRef}
+                value={descriptionValue}
+                onChange={e => setDescriptionValue(e.target.value)}
+                onBlur={handleDescriptionSave}
+                onKeyDown={handleDescriptionKeyDown}
+                className="min-h-[60px] text-sm focus-neon resize-none"
+                placeholder="Add a description..."
+              />
+            ) : todo.description ? (
               <p
+                onClick={() => !isDimmed && setIsEditingDescription(true)}
                 className={cn(
                   'text-sm text-muted-foreground line-clamp-2',
-                  isCompleted && 'line-through'
+                  isCompleted && 'line-through',
+                  !isDimmed && 'cursor-text hover:text-foreground transition-colors'
                 )}
+                title="Click to edit"
               >
                 {todo.description}
               </p>
+            ) : (
+              !isDimmed && (
+                <p
+                  onClick={() => setIsEditingDescription(true)}
+                  className="text-sm text-muted-foreground/60 cursor-text hover:text-muted-foreground transition-colors"
+                  title="Click to add description"
+                >
+                  Add description...
+                </p>
+              )
             )}
 
             <div className="flex flex-wrap items-center gap-2">
