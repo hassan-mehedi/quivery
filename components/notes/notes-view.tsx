@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Search, Plus, X, StickyNote } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
+import { Search, Plus, X, StickyNote, Keyboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -41,6 +41,8 @@ export function NotesView() {
   const [showEditor, setShowEditor] = useState(false);
   const [localSearch, setLocalSearch] = useState(searchQuery);
   const [localTagIds, setLocalTagIds] = useState<string[]>(selectedTagIds);
+  const [focusedNoteId, setFocusedNoteId] = useState<string | null>(null);
+  const [showShortcutsHint, setShowShortcutsHint] = useState(false);
 
   useEffect(() => {
     fetchNotes();
@@ -99,6 +101,138 @@ export function NotesView() {
     }));
     await updateNotesOrder(updates);
   };
+
+  // Keyboard shortcuts handler
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      // Don't handle shortcuts if user is typing in an input or textarea
+      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) {
+        return;
+      }
+
+      // Don't handle shortcuts if editor is open (on desktop)
+      if (!isMobile && selectedNote) {
+        return;
+      }
+
+      // Create new note - N or C
+      if (e.key === 'n' || e.key === 'N' || e.key === 'c' || e.key === 'C') {
+        e.preventDefault();
+        handleCreateNote();
+        return;
+      }
+
+      // Show keyboard shortcuts hint - Shift+?
+      if (e.key === '?' && e.shiftKey) {
+        e.preventDefault();
+        setShowShortcutsHint(prev => !prev);
+        return;
+      }
+
+      // Focus search - /
+      if (e.key === '/') {
+        e.preventDefault();
+        const searchInput = document.querySelector('input[placeholder*="Search notes"]') as HTMLInputElement;
+        if (searchInput) {
+          searchInput.focus();
+          searchInput.select();
+        }
+        return;
+      }
+
+      // Escape to clear focus and selection
+      if (e.key === 'Escape') {
+        setFocusedNoteId(null);
+        setShowShortcutsHint(false);
+        selectNote(null);
+        return;
+      }
+
+      // View mode shortcuts (desktop only)
+      if (!isMobile) {
+        if (e.key === 'g' || e.key === 'G') {
+          e.preventDefault();
+          setViewMode('grid');
+          return;
+        }
+        if (e.key === 'l' || e.key === 'L') {
+          e.preventDefault();
+          setViewMode('list');
+          return;
+        }
+        if (e.key === 't' || e.key === 'T') {
+          e.preventDefault();
+          setViewMode('compact');
+          return;
+        }
+      }
+
+      // Navigation and actions on focused note
+      if (notes.length === 0) return;
+
+      const currentIndex = focusedNoteId ? notes.findIndex(n => n.id === focusedNoteId) : -1;
+
+      // Arrow down - navigate to next note
+      if (e.key === 'ArrowDown' || e.key === 'j' || e.key === 'J') {
+        e.preventDefault();
+        const nextIndex = currentIndex < notes.length - 1 ? currentIndex + 1 : 0;
+        setFocusedNoteId(notes[nextIndex].id);
+        return;
+      }
+
+      // Arrow up - navigate to previous note
+      if (e.key === 'ArrowUp' || e.key === 'k' || e.key === 'K') {
+        e.preventDefault();
+        const prevIndex = currentIndex > 0 ? currentIndex - 1 : notes.length - 1;
+        setFocusedNoteId(notes[prevIndex].id);
+        return;
+      }
+
+      // Enter - open focused note
+      if (e.key === 'Enter' && focusedNoteId) {
+        e.preventDefault();
+        const note = notes.find(n => n.id === focusedNoteId);
+        if (note) handleSelectNote(note);
+        return;
+      }
+
+      // Delete/Backspace - delete focused note
+      if ((e.key === 'Delete' || e.key === 'Backspace') && focusedNoteId) {
+        e.preventDefault();
+        handleDeleteNote(focusedNoteId);
+        setFocusedNoteId(null);
+        return;
+      }
+
+      // Duplicate note - Cmd/Ctrl+D
+      if ((e.metaKey || e.ctrlKey) && e.key === 'd' && focusedNoteId) {
+        e.preventDefault();
+        const note = notes.find(n => n.id === focusedNoteId);
+        if (note) {
+          createNote(`${note.title} (copy)`, note.content);
+        }
+        return;
+      }
+    },
+    [notes, focusedNoteId, isMobile, selectedNote, handleCreateNote, handleSelectNote, handleDeleteNote, createNote, selectNote, setViewMode]
+  );
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
+
+  // Show shortcuts hint on first visit
+  useEffect(() => {
+    const hasSeenHint = localStorage.getItem('notes-shortcuts-hint-seen');
+    if (!hasSeenHint) {
+      setShowShortcutsHint(true);
+      setTimeout(() => {
+        setShowShortcutsHint(false);
+        localStorage.setItem('notes-shortcuts-hint-seen', 'true');
+      }, 5000);
+    }
+  }, []);
 
   const hasFilters = localSearch || localTagIds.length > 0;
   const showEmptyState = !isLoading && notes.length === 0;
@@ -220,6 +354,7 @@ export function NotesView() {
                   key={note.id}
                   note={note}
                   selected={selectedNote?.id === note.id}
+                  focused={focusedNoteId === note.id}
                   onClick={() => handleSelectNote(note)}
                 />
               ))}
@@ -254,10 +389,94 @@ export function NotesView() {
             </Button>
           </div>
 
-          {/* View Mode Toggle */}
-          <ViewModeToggle mode={viewMode} onChange={setViewMode} />
+          {/* View Mode Toggle and Shortcuts Button */}
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => setShowShortcutsHint(prev => !prev)}
+              variant="outline"
+              size="icon"
+              title="Keyboard shortcuts (Shift+?)"
+            >
+              <Keyboard className="h-4 w-4" />
+            </Button>
+            <ViewModeToggle mode={viewMode} onChange={setViewMode} />
+          </div>
         </div>
       </div>
+
+      {/* Keyboard Shortcuts Hint */}
+      {showShortcutsHint && (
+        <div className="mx-6 mt-4 bg-neon-purple/10 border border-neon-purple/30 rounded-lg p-4">
+          <h3 className="font-semibold text-neon-purple mb-3 flex items-center gap-2">
+            <Keyboard className="w-4 h-4" />
+            Keyboard Shortcuts
+          </h3>
+          <div className="space-y-4">
+            {/* Navigation */}
+            <div>
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Navigation</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                <div>
+                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">↑↓</kbd>
+                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">J/K</kbd>
+                  <span className="text-muted-foreground">Navigate notes</span>
+                </div>
+                <div>
+                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">/</kbd>
+                  <span className="text-muted-foreground">Focus search</span>
+                </div>
+                <div>
+                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">Esc</kbd>
+                  <span className="text-muted-foreground">Clear selection/close</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div>
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Actions</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                <div>
+                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">N</kbd>
+                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">C</kbd>
+                  <span className="text-muted-foreground">Create new note</span>
+                </div>
+                <div>
+                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">Enter</kbd>
+                  <span className="text-muted-foreground">Open note</span>
+                </div>
+                <div>
+                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">Del</kbd>
+                  <span className="text-muted-foreground">Delete note</span>
+                </div>
+                <div>
+                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">Cmd/Ctrl+D</kbd>
+                  <span className="text-muted-foreground">Duplicate note</span>
+                </div>
+              </div>
+            </div>
+
+            {/* View Modes */}
+            <div>
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">View Modes</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                <div>
+                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">G</kbd>
+                  <span className="text-muted-foreground">Grid view</span>
+                </div>
+                <div>
+                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">L</kbd>
+                  <span className="text-muted-foreground">List view</span>
+                </div>
+                <div>
+                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">T</kbd>
+                  <span className="text-muted-foreground">Compact view</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Filter Bar */}
       <div className="px-6 border-b border-border">
@@ -301,6 +520,7 @@ export function NotesView() {
             <NotesGrid
               notes={notes}
               selectedNote={selectedNote}
+              focusedNoteId={focusedNoteId}
               viewMode={viewMode}
               onSelectNote={handleSelectNote}
               onReorder={handleReorder}

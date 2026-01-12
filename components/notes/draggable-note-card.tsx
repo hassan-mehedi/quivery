@@ -15,6 +15,7 @@ type NoteWithTags = Note & {
 interface DraggableNoteCardProps {
   note: NoteWithTags;
   selected: boolean;
+  focused?: boolean;
   viewMode: 'grid' | 'list' | 'compact';
   onClick: () => void;
   isDraggingEnabled: boolean;
@@ -23,6 +24,7 @@ interface DraggableNoteCardProps {
 export function DraggableNoteCard({
   note,
   selected,
+  focused = false,
   viewMode,
   onClick,
   isDraggingEnabled,
@@ -41,11 +43,11 @@ export function DraggableNoteCard({
   const cardContent = (() => {
     switch (viewMode) {
       case 'grid':
-        return <NoteGridCard note={note} selected={selected} onClick={onClick} />;
+        return <NoteGridCard note={note} selected={selected} focused={focused} onClick={onClick} />;
       case 'list':
-        return <NoteListCard note={note} selected={selected} onClick={onClick} />;
+        return <NoteListCard note={note} selected={selected} focused={focused} onClick={onClick} />;
       case 'compact':
-        return <NoteCompactCard note={note} selected={selected} onClick={onClick} />;
+        return <NoteCompactCard note={note} selected={selected} focused={focused} onClick={onClick} />;
     }
   })();
 

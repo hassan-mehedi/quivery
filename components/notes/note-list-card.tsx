@@ -11,10 +11,11 @@ type NoteWithTags = Note & {
 interface NoteListCardProps {
   note: NoteWithTags;
   selected: boolean;
+  focused?: boolean;
   onClick: () => void;
 }
 
-export function NoteListCard({ note, selected, onClick }: NoteListCardProps) {
+export function NoteListCard({ note, selected, focused = false, onClick }: NoteListCardProps) {
   // Strip HTML and get plain text preview
   const getPreview = (html: string) => {
     const text = html.replace(/<[^>]*>/g, '');
@@ -39,6 +40,7 @@ export function NoteListCard({ note, selected, onClick }: NoteListCardProps) {
         hover:bg-card/80 hover:border-border
         text-left
         ${selected ? 'ring-2 ring-primary/50 border-primary/70' : ''}
+        ${focused ? 'ring-2 ring-neon-purple/60 border-neon-purple/50' : ''}
       `}
     >
       {/* Title & Metadata Row */}

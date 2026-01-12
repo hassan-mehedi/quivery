@@ -311,11 +311,11 @@ export function TodoView() {
         if (todo) {
           createTodo({
             title: `${todo.title} (copy)`,
-            description: todo.description,
+            description: todo.description || undefined,
             status: 'PENDING',
             priority: todo.priority,
             dueDate: todo.dueDate ? new Date(todo.dueDate).toISOString() : undefined,
-            projectId: todo.projectId,
+            projectId: todo.projectId || undefined,
           });
         }
         return;

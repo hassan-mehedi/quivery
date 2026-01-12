@@ -11,10 +11,11 @@ type NoteWithTags = Note & {
 interface NoteCompactCardProps {
   note: NoteWithTags;
   selected: boolean;
+  focused?: boolean;
   onClick: () => void;
 }
 
-export function NoteCompactCard({ note, selected, onClick }: NoteCompactCardProps) {
+export function NoteCompactCard({ note, selected, focused = false, onClick }: NoteCompactCardProps) {
   const displayedTags = note.tags.slice(0, 2);
   const remainingCount = note.tags.length - 2;
 
@@ -33,6 +34,7 @@ export function NoteCompactCard({ note, selected, onClick }: NoteCompactCardProp
         text-left
         min-h-[48px]
         ${selected ? 'ring-2 ring-primary/50 border-primary/70' : ''}
+        ${focused ? 'ring-2 ring-neon-purple/60 border-neon-purple/50' : ''}
       `}
     >
       {/* Left side: Title */}

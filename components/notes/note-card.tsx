@@ -12,10 +12,11 @@ type NoteWithTags = Note & {
 interface NoteCardProps {
   note: NoteWithTags;
   selected?: boolean;
+  focused?: boolean;
   onClick: () => void;
 }
 
-export function NoteCard({ note, selected, onClick }: NoteCardProps) {
+export function NoteCard({ note, selected, focused = false, onClick }: NoteCardProps) {
   // Strip HTML tags from content for preview
   const stripHtml = (html: string) => {
     const tmp = document.createElement('DIV');
@@ -36,7 +37,8 @@ export function NoteCard({ note, selected, onClick }: NoteCardProps) {
         'hover:bg-accent/80 hover:border-primary/50',
         selected
           ? 'bg-accent border-primary/70 ring-1 ring-primary/30'
-          : 'bg-card border-border'
+          : 'bg-card border-border',
+        focused && 'ring-2 ring-neon-purple/60 border-neon-purple/50'
       )}
     >
       <div className="space-y-2">

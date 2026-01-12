@@ -24,6 +24,7 @@ type NoteWithTags = Note & {
 interface NotesGridProps {
   notes: NoteWithTags[];
   selectedNote: NoteWithTags | null;
+  focusedNoteId?: string | null;
   viewMode: 'grid' | 'list' | 'compact';
   onSelectNote: (note: NoteWithTags) => void;
   onReorder?: (notes: NoteWithTags[]) => Promise<void>;
@@ -33,6 +34,7 @@ interface NotesGridProps {
 export function NotesGrid({
   notes,
   selectedNote,
+  focusedNoteId,
   viewMode,
   onSelectNote,
   onReorder,
@@ -107,6 +109,7 @@ export function NotesGrid({
             key={note.id}
             note={note}
             selected={selectedNote?.id === note.id}
+            focused={focusedNoteId === note.id}
             viewMode={viewMode}
             onClick={() => onSelectNote(note)}
             isDraggingEnabled={false}
@@ -131,6 +134,7 @@ export function NotesGrid({
               key={note.id}
               note={note}
               selected={selectedNote?.id === note.id}
+              focused={focusedNoteId === note.id}
               viewMode={viewMode}
               onClick={() => onSelectNote(note)}
               isDraggingEnabled={isDraggingEnabled}
