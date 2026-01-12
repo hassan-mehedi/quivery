@@ -431,15 +431,15 @@ export function TodoView() {
               <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Navigation</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                 <div>
-                  <kbd className="px-2 py-1 bg-muted rounded text-xs mr-2">↑↓</kbd>
+                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">↑↓</kbd>
                   <span className="text-muted-foreground">Navigate todos</span>
                 </div>
                 <div>
-                  <kbd className="px-2 py-1 bg-muted rounded text-xs mr-2">/</kbd>
+                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">/</kbd>
                   <span className="text-muted-foreground">Focus search</span>
                 </div>
                 <div>
-                  <kbd className="px-2 py-1 bg-muted rounded text-xs mr-2">Esc</kbd>
+                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">Esc</kbd>
                   <span className="text-muted-foreground">Clear selection</span>
                 </div>
               </div>
@@ -450,23 +450,23 @@ export function TodoView() {
               <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Actions</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                 <div>
-                  <kbd className="px-2 py-1 bg-muted rounded text-xs mr-2">Q</kbd>
+                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">Q</kbd>
                   <span className="text-muted-foreground">Quick add todo</span>
                 </div>
                 <div>
-                  <kbd className="px-2 py-1 bg-muted rounded text-xs mr-2">Space</kbd>
+                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">Space</kbd>
                   <span className="text-muted-foreground">Toggle complete</span>
                 </div>
                 <div>
-                  <kbd className="px-2 py-1 bg-muted rounded text-xs mr-2">Enter</kbd>
+                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">Enter</kbd>
                   <span className="text-muted-foreground">Edit details</span>
                 </div>
                 <div>
-                  <kbd className="px-2 py-1 bg-muted rounded text-xs mr-2">Del</kbd>
+                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">Del</kbd>
                   <span className="text-muted-foreground">Delete todo(s)</span>
                 </div>
                 <div>
-                  <kbd className="px-2 py-1 bg-muted rounded text-xs mr-2">Cmd/Ctrl+D</kbd>
+                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">Cmd/Ctrl+D</kbd>
                   <span className="text-muted-foreground">Duplicate todo</span>
                 </div>
               </div>
@@ -477,19 +477,19 @@ export function TodoView() {
               <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Editing</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                 <div>
-                  <kbd className="px-2 py-1 bg-muted rounded text-xs mr-2">1</kbd>
+                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">1</kbd>
                   <span className="text-muted-foreground">Urgent priority</span>
                 </div>
                 <div>
-                  <kbd className="px-2 py-1 bg-muted rounded text-xs mr-2">2</kbd>
+                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">2</kbd>
                   <span className="text-muted-foreground">High priority</span>
                 </div>
                 <div>
-                  <kbd className="px-2 py-1 bg-muted rounded text-xs mr-2">3</kbd>
+                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">3</kbd>
                   <span className="text-muted-foreground">Medium priority</span>
                 </div>
                 <div>
-                  <kbd className="px-2 py-1 bg-muted rounded text-xs mr-2">4</kbd>
+                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">4</kbd>
                   <span className="text-muted-foreground">Low priority</span>
                 </div>
               </div>
@@ -500,11 +500,11 @@ export function TodoView() {
               <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Bulk Operations</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                 <div>
-                  <kbd className="px-2 py-1 bg-muted rounded text-xs mr-2">M</kbd>
+                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">M</kbd>
                   <span className="text-muted-foreground">Multi-select mode</span>
                 </div>
                 <div>
-                  <kbd className="px-2 py-1 bg-muted rounded text-xs mr-2">Cmd/Ctrl+A</kbd>
+                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">Cmd/Ctrl+A</kbd>
                   <span className="text-muted-foreground">Select all</span>
                 </div>
               </div>
