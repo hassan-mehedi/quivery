@@ -42,7 +42,9 @@ export function NoteGridCard({ note, selected, onClick }: NoteGridCardProps) {
       `}
     >
       {/* Title */}
-      <h3 className="text-lg font-semibold line-clamp-1 mb-2">{note.title || 'Untitled'}</h3>
+      <h3 className="text-lg font-semibold text-foreground line-clamp-1 mb-2">
+        {note.title || 'Untitled'}
+      </h3>
 
       {/* Content preview */}
       <p className="text-sm text-muted-foreground line-clamp-3 mb-3 flex-1">{preview}</p>

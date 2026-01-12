@@ -43,7 +43,9 @@ export function NoteListCard({ note, selected, onClick }: NoteListCardProps) {
     >
       {/* Title & Metadata Row */}
       <div className="flex items-start justify-between gap-3 mb-2">
-        <h3 className="text-base font-medium line-clamp-1 flex-1">{note.title || 'Untitled'}</h3>
+        <h3 className="text-base font-medium text-foreground line-clamp-1 flex-1">
+          {note.title || 'Untitled'}
+        </h3>
         <span className="text-xs text-muted-foreground whitespace-nowrap">
           {formatDistanceToNow(new Date(note.updatedAt), { addSuffix: true })}
         </span>

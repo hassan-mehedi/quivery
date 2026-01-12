@@ -37,7 +37,12 @@ const PROJECT_COLORS = [
 
 const PROJECT_ICONS = ['📁', '💼', '🎯', '🚀', '⭐', '📌', '🏠', '💡'];
 
-export function ProjectPicker({ open, onOpenChange, selectedProjectId, onSelect }: ProjectPickerProps) {
+export function ProjectPicker({
+  open,
+  onOpenChange,
+  selectedProjectId,
+  onSelect,
+}: ProjectPickerProps) {
   const { projects, createProject } = useProjects();
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreating, setIsCreating] = useState(false);
@@ -79,8 +84,10 @@ export function ProjectPicker({ open, onOpenChange, selectedProjectId, onSelect 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Select Project</DialogTitle>
-          <DialogDescription>Choose a project to organize your todo</DialogDescription>
+          <DialogTitle className="text-foreground">Select Project</DialogTitle>
+          <DialogDescription className="text-muted-foreground">
+            Choose a project to organize your todo
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -163,11 +170,15 @@ export function ProjectPicker({ open, onOpenChange, selectedProjectId, onSelect 
               </div>
 
               <div className="flex gap-2">
-                <Button onClick={handleCreateProject} className="flex-1">
+                <Button onClick={handleCreateProject} className="flex-1 text-foreground">
                   <Plus className="w-4 h-4 mr-2" />
                   Create Project
                 </Button>
-                <Button variant="outline" onClick={() => setIsCreating(false)}>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsCreating(false)}
+                  className="text-foreground"
+                >
                   Cancel
                 </Button>
               </div>
@@ -181,9 +192,7 @@ export function ProjectPicker({ open, onOpenChange, selectedProjectId, onSelect 
                     className={cn(
                       'w-full flex items-center gap-3 p-3 rounded-lg border transition-all',
                       'hover:bg-muted',
-                      !selectedProjectId
-                        ? 'border-neon-cyan bg-neon-cyan/10'
-                        : 'border-border'
+                      !selectedProjectId ? 'border-neon-cyan bg-neon-cyan/10' : 'border-border'
                     )}
                     onClick={() => handleSelect(null)}
                   >
@@ -191,7 +200,7 @@ export function ProjectPicker({ open, onOpenChange, selectedProjectId, onSelect 
                       <Folder className="w-4 h-4 text-muted-foreground" />
                     </div>
                     <div className="flex-1 text-left">
-                      <div className="font-medium">No Project</div>
+                      <div className="font-medium text-foreground">No Project</div>
                       <div className="text-xs text-muted-foreground">Inbox</div>
                     </div>
                   </button>
@@ -221,7 +230,7 @@ export function ProjectPicker({ open, onOpenChange, selectedProjectId, onSelect 
                           {project.icon || '📁'}
                         </div>
                         <div className="flex-1 text-left">
-                          <div className="font-medium">{project.name}</div>
+                          <div className="font-medium text-foreground">{project.name}</div>
                           {project._count && (
                             <div className="text-xs text-muted-foreground">
                               {project._count.todos} todo{project._count.todos !== 1 ? 's' : ''}
@@ -236,7 +245,7 @@ export function ProjectPicker({ open, onOpenChange, selectedProjectId, onSelect 
 
               <Button
                 variant="outline"
-                className="w-full"
+                className="w-full text-foreground"
                 onClick={() => setIsCreating(true)}
               >
                 <Plus className="w-4 h-4 mr-2" />

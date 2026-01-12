@@ -62,8 +62,10 @@ export default function LoginPage() {
           <div className="mx-auto w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center mb-2 neon-glow-cyan">
             <Zap className="w-6 h-6 text-neon-cyan" />
           </div>
-          <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
-          <CardDescription>Sign in to your NeonTask account</CardDescription>
+          <CardTitle className="text-2xl font-bold text-foreground">Welcome Back</CardTitle>
+          <CardDescription className="text-muted-foreground">
+            Sign in to your NeonTask account
+          </CardDescription>
         </CardHeader>
 
         <form onSubmit={handleSubmit}>
@@ -104,7 +106,11 @@ export default function LoginPage() {
           </CardContent>
 
           <CardFooter className="flex flex-col gap-4 mt-4">
-            <Button type="submit" className="w-full neon-glow-cyan" disabled={isLoading}>
+            <Button
+              type="submit"
+              className="w-full neon-glow-cyan text-foreground"
+              disabled={isLoading}
+            >
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

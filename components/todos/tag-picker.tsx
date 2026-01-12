@@ -3,11 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Tag } from '@prisma/client';
 import { TagBadge } from './tag-badge';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -127,12 +123,7 @@ export function TagPicker({ selectedTagIds, onChange, trigger }: TagPickerProps)
             {selectedTags.length > 0 ? (
               <div className="flex flex-wrap gap-1">
                 {selectedTags.slice(0, 3).map(tag => (
-                  <TagBadge
-                    key={tag.id}
-                    tag={tag}
-                    size="xs"
-                    onRemove={() => removeTag(tag.id)}
-                  />
+                  <TagBadge key={tag.id} tag={tag} size="xs" onRemove={() => removeTag(tag.id)} />
                 ))}
                 {selectedTags.length > 3 && (
                   <span className="text-xs text-muted-foreground">
@@ -141,7 +132,7 @@ export function TagPicker({ selectedTagIds, onChange, trigger }: TagPickerProps)
                 )}
               </div>
             ) : (
-              'Select tags'
+              <span className="text-foreground">Select tags</span>
             )}
           </Button>
         )}
@@ -149,16 +140,11 @@ export function TagPicker({ selectedTagIds, onChange, trigger }: TagPickerProps)
       <PopoverContent className="w-80" align="start">
         <div className="space-y-4">
           <div className="space-y-2">
-            <h4 className="font-medium text-sm">Tags</h4>
+            <h4 className="font-medium text-sm text-foreground">Tags</h4>
             {selectedTags.length > 0 && (
               <div className="flex flex-wrap gap-1">
                 {selectedTags.map(tag => (
-                  <TagBadge
-                    key={tag.id}
-                    tag={tag}
-                    size="sm"
-                    onRemove={() => removeTag(tag.id)}
-                  />
+                  <TagBadge key={tag.id} tag={tag} size="sm" onRemove={() => removeTag(tag.id)} />
                 ))}
               </div>
             )}
@@ -198,11 +184,16 @@ export function TagPicker({ selectedTagIds, onChange, trigger }: TagPickerProps)
               </div>
 
               <div className="flex gap-2">
-                <Button onClick={createTag} size="sm" className="flex-1">
+                <Button onClick={createTag} size="sm" className="flex-1 text-foreground">
                   <Plus className="w-4 h-4 mr-2" />
                   Create
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => setIsCreating(false)}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsCreating(false)}
+                  className="text-foreground"
+                >
                   Cancel
                 </Button>
               </div>
@@ -258,7 +249,7 @@ export function TagPicker({ selectedTagIds, onChange, trigger }: TagPickerProps)
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full"
+                className="w-full text-foreground"
                 onClick={() => setIsCreating(true)}
               >
                 <Plus className="w-4 h-4 mr-2" />

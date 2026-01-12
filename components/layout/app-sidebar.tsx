@@ -34,7 +34,6 @@ const navigation = [
 
 export function AppSidebar() {
   const { data: session } = useSession();
-  const pathname = usePathname();
   const { currentView, setCurrentView, sidebarOpen, toggleSidebar, isMobile } = useUIStore();
 
   const handleNavigation = (view: 'todos' | 'notes') => {
@@ -70,7 +69,7 @@ export function AppSidebar() {
             <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center neon-glow-cyan">
               <Zap className="w-4 h-4 text-neon-cyan" />
             </div>
-            <span className="font-bold text-lg">NeonTask</span>
+            <span className="font-bold text-lg text-foreground">NeonTask</span>
           </div>
 
           {!isMobile && (
@@ -156,13 +155,15 @@ export function AppSidebar() {
                     !sidebarOpen && !isMobile && 'opacity-0 w-0'
                   )}
                 >
-                  <p className="text-sm font-medium truncate">{session?.user?.name || 'User'}</p>
+                  <p className="text-sm font-medium text-foreground truncate">
+                    {session?.user?.name || 'User'}
+                  </p>
                   <p className="text-xs text-muted-foreground truncate">{session?.user?.email}</p>
                 </div>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem className="cursor-pointer">
+              <DropdownMenuItem className="cursor-pointer text-foreground">
                 <Settings className="mr-2 h-4 w-4" />
                 Settings
               </DropdownMenuItem>

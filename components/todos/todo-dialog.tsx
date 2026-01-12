@@ -30,10 +30,12 @@ import { Loader2, Folder } from 'lucide-react';
 interface TodoDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  todo?: (Todo & {
-    project?: { id: string; name: string; color: string; icon?: string | null } | null;
-    tags?: Array<{ tag: { id: string; name: string; color: string } }>;
-  }) | null;
+  todo?:
+    | (Todo & {
+        project?: { id: string; name: string; color: string; icon?: string | null } | null;
+        tags?: Array<{ tag: { id: string; name: string; color: string } }>;
+      })
+    | null;
   onSubmit: (data: {
     title: string;
     description?: string;
@@ -153,7 +155,9 @@ export function TodoDialog({ open, onOpenChange, todo, onSubmit }: TodoDialogPro
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] bg-card border-border">
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Edit Todo' : 'Create Todo'}</DialogTitle>
+          <DialogTitle className="text-foreground">
+            {isEditing ? 'Edit Todo' : 'Create Todo'}
+          </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -279,10 +283,11 @@ export function TodoDialog({ open, onOpenChange, todo, onSubmit }: TodoDialogPro
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={isLoading}
+              className="text-foreground"
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading} className="neon-glow-cyan">
+            <Button type="submit" disabled={isLoading} className="neon-glow-cyan text-foreground">
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

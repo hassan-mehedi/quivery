@@ -15,7 +15,7 @@ export function MobileHeader() {
         <div className="w-7 h-7 rounded-lg bg-primary/20 flex items-center justify-center neon-glow-cyan">
           <Zap className="w-3.5 h-3.5 text-neon-cyan" />
         </div>
-        <span className="font-bold">NeonTask</span>
+        <span className="font-bold text-foreground">NeonTask</span>
       </div>
 
       <Button variant="ghost" size="icon" onClick={toggleSidebar} className="h-9 w-9">

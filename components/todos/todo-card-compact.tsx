@@ -94,7 +94,7 @@ export function TodoCardCompact({
           className={cn(
             'flex-1 text-left text-sm font-medium truncate',
             isCompleted && 'line-through text-muted-foreground',
-            !isDimmed && 'hover:text-neon-cyan transition-colors'
+            !isDimmed && 'text-foreground hover:text-neon-cyan transition-colors'
           )}
           title={todo.title}
         >
@@ -178,7 +178,7 @@ export function TodoCardCompact({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onEdit(todo)}>
+            <DropdownMenuItem onClick={() => onEdit(todo)} className="text-foreground">
               <Pencil className="mr-2 h-4 w-4" />
               Edit Details
             </DropdownMenuItem>

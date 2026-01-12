@@ -36,7 +36,9 @@ export function NoteCompactCard({ note, selected, onClick }: NoteCompactCardProp
       `}
     >
       {/* Left side: Title */}
-      <h3 className="text-sm font-medium line-clamp-1 flex-1">{note.title || 'Untitled'}</h3>
+      <h3 className="text-sm font-medium text-foreground line-clamp-1 flex-1">
+        {note.title || 'Untitled'}
+      </h3>
 
       {/* Right side: Tags and Date */}
       <div className="flex items-center gap-3">

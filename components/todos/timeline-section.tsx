@@ -42,12 +42,10 @@ export function TimelineSection({
         )}
       >
         <div className="flex items-center gap-2">
-          {isExpanded ? (
-            <ChevronDown className="w-4 h-4" />
-          ) : (
-            <ChevronRight className="w-4 h-4" />
-          )}
-          <span className="font-semibold text-sm uppercase tracking-wide">{title}</span>
+          {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+          <span className="font-semibold text-sm uppercase tracking-wide text-foreground">
+            {title}
+          </span>
           <span
             className={cn(
               'px-2 py-0.5 rounded-full text-xs font-medium',

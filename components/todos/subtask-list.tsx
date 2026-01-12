@@ -82,7 +82,7 @@ export function SubtaskList({
               variant="ghost"
               size="sm"
               onClick={() => setShowAddSubtask(true)}
-              className="h-7 text-xs text-muted-foreground hover:text-foreground -ml-2"
+              className="h-7 text-xs text-foreground text-muted-foreground hover:text-foreground -ml-2"
             >
               <Plus className="w-3 h-3 mr-1" />
               Add subtask

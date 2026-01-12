@@ -77,8 +77,10 @@ export default function RegisterPage() {
           <div className="mx-auto w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center mb-2 neon-glow-purple">
             <Zap className="w-6 h-6 text-neon-purple" />
           </div>
-          <CardTitle className="text-2xl font-bold">Create Account</CardTitle>
-          <CardDescription>Join NeonTask and boost your productivity</CardDescription>
+          <CardTitle className="text-2xl font-bold text-foreground">Create Account</CardTitle>
+          <CardDescription className="text-muted-foreground">
+            Join NeonTask and boost your productivity
+          </CardDescription>
         </CardHeader>
 
         <form onSubmit={handleSubmit}>
@@ -146,7 +148,11 @@ export default function RegisterPage() {
           </CardContent>
 
           <CardFooter className="flex flex-col gap-4 mt-4">
-            <Button type="submit" className="w-full neon-glow-purple" disabled={isLoading}>
+            <Button
+              type="submit"
+              className="w-full neon-glow-purple text-foreground"
+              disabled={isLoading}
+            >
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

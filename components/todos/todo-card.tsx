@@ -172,7 +172,7 @@ export function TodoCard({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => onEdit(todo)}>
+                  <DropdownMenuItem onClick={() => onEdit(todo)} className="text-foreground">
                     <Pencil className="mr-2 h-4 w-4" />
                     Edit Details
                   </DropdownMenuItem>
@@ -240,16 +240,21 @@ export function TodoCard({
             </div>
 
             {/* Subtasks */}
-            {todo.subtasks && todo.subtasks.length > 0 && onCreateSubtask && onToggleSubtask && onUpdateSubtask && onDeleteSubtask && (
-              <SubtaskList
-                subtasks={todo.subtasks}
-                parentId={todo.id}
-                onCreateSubtask={onCreateSubtask}
-                onToggleSubtask={onToggleSubtask}
-                onUpdateSubtask={onUpdateSubtask}
-                onDeleteSubtask={onDeleteSubtask}
-              />
-            )}
+            {todo.subtasks &&
+              todo.subtasks.length > 0 &&
+              onCreateSubtask &&
+              onToggleSubtask &&
+              onUpdateSubtask &&
+              onDeleteSubtask && (
+                <SubtaskList
+                  subtasks={todo.subtasks}
+                  parentId={todo.id}
+                  onCreateSubtask={onCreateSubtask}
+                  onToggleSubtask={onToggleSubtask}
+                  onUpdateSubtask={onUpdateSubtask}
+                  onDeleteSubtask={onDeleteSubtask}
+                />
+              )}
           </div>
         </div>
       </CardContent>
