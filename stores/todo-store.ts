@@ -6,6 +6,7 @@ interface TodoState {
   isLoading: boolean;
   error: string | null;
   viewMode: 'timeline' | 'list';
+  isMultiSelectMode: boolean;
   selectedTodoIds: Set<string>;
   expandedSections: Set<string>;
   filter: {
@@ -21,9 +22,16 @@ interface TodoState {
   updateTodo: (id: string, updates: Partial<Todo>) => void;
   deleteTodo: (id: string) => void;
   setViewMode: (mode: 'timeline' | 'list') => void;
+  toggleMultiSelectMode: () => void;
   toggleTodoSelection: (id: string) => void;
   selectMultipleTodos: (ids: string[]) => void;
+  selectAllVisible: (todoIds: string[]) => void;
   clearSelection: () => void;
+  bulkUpdateStatus: (ids: string[], status: TodoStatus) => Promise<void>;
+  bulkDelete: (ids: string[]) => Promise<void>;
+  bulkAssignProject: (ids: string[], projectId: string | null) => Promise<void>;
+  bulkAddTags: (ids: string[], tagIds: string[]) => Promise<void>;
+  bulkSetPriority: (ids: string[], priority: Priority) => Promise<void>;
   toggleSection: (section: string) => void;
   setFilter: (filter: Partial<TodoState['filter']>) => void;
   setSearchQuery: (query: string) => void;
@@ -37,6 +45,7 @@ export const useTodoStore = create<TodoState>(set => ({
   isLoading: false,
   error: null,
   viewMode: 'timeline',
+  isMultiSelectMode: false,
   selectedTodoIds: new Set(),
   expandedSections: new Set(['overdue', 'today', 'tomorrow', 'thisWeek', 'later', 'noDate']),
   filter: {
@@ -58,6 +67,11 @@ export const useTodoStore = create<TodoState>(set => ({
       todos: state.todos.filter(t => t.id !== id),
     })),
   setViewMode: viewMode => set({ viewMode }),
+  toggleMultiSelectMode: () =>
+    set(state => ({
+      isMultiSelectMode: !state.isMultiSelectMode,
+      selectedTodoIds: new Set(),
+    })),
   toggleTodoSelection: id =>
     set(state => {
       const newSelection = new Set(state.selectedTodoIds);
@@ -72,7 +86,121 @@ export const useTodoStore = create<TodoState>(set => ({
     set(state => ({
       selectedTodoIds: new Set([...state.selectedTodoIds, ...ids]),
     })),
-  clearSelection: () => set({ selectedTodoIds: new Set() }),
+  selectAllVisible: todoIds =>
+    set({ selectedTodoIds: new Set(todoIds) }),
+  clearSelection: () => set({ selectedTodoIds: new Set(), isMultiSelectMode: false }),
+  bulkUpdateStatus: async (ids, status) => {
+    try {
+      const response = await fetch('/api/todos/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids, action: 'update', updates: { status } }),
+      });
+
+      if (!response.ok) throw new Error('Failed to update todos');
+
+      // Optimistic update
+      set(state => ({
+        todos: state.todos.map(t => (ids.includes(t.id) ? { ...t, status } : t)),
+        selectedTodoIds: new Set(),
+        isMultiSelectMode: false,
+      }));
+    } catch (error) {
+      console.error('Bulk update failed:', error);
+      set({ error: 'Failed to update todos' });
+      throw error;
+    }
+  },
+  bulkDelete: async ids => {
+    set({ isLoading: true });
+    try {
+      const response = await fetch('/api/todos/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids, action: 'delete' }),
+      });
+
+      if (!response.ok) throw new Error('Failed to delete todos');
+
+      set(state => ({
+        todos: state.todos.filter(t => !ids.includes(t.id)),
+        selectedTodoIds: new Set(),
+        isMultiSelectMode: false,
+      }));
+    } catch (error) {
+      console.error('Bulk delete failed:', error);
+      throw error;
+    }
+  },
+  bulkAssignProject: async (ids, projectId) => {
+    try {
+      const response = await fetch('/api/todos/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ids,
+          action: 'update',
+          updates: { projectId },
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to assign project');
+
+      // Update local state
+      set(state => ({
+        todos: state.todos.map(t =>
+          ids.includes(t.id) ? { ...t, projectId: projectId || null } : t
+        ),
+      }));
+    } catch (error) {
+      console.error('Bulk assign project error:', error);
+      throw error;
+    }
+  },
+  bulkAddTags: async (ids, tagIds) => {
+    try {
+      const response = await fetch('/api/todos/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids, action: 'addTags', updates: { tagIds } }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to add tags to todos');
+      }
+
+      // Note: We don't update local state for tags here since tags require full refetch
+      // The useTodos hook will handle the refresh
+    } catch (error) {
+      console.error('Bulk add tags failed:', error);
+      throw error;
+    }
+  },
+  bulkSetPriority: async (ids, priority) => {
+    try {
+      const response = await fetch('/api/todos/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ids,
+          action: 'update',
+          updates: { priority },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update priority');
+      }
+
+      // Update local state
+      set(state => ({
+        todos: state.todos.map(t => (ids.includes(t.id) ? { ...t, priority } : t)),
+      }));
+    } catch (error) {
+      console.error('Bulk priority update error:', error);
+      throw error;
+    }
+  },
   toggleSection: section =>
     set(state => {
       const newSections = new Set(state.expandedSections);

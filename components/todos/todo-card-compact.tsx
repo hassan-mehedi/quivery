@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect, memo } from 'react';
 import { Todo } from '@prisma/client';
+import { useSwipeable } from 'react-swipeable';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,6 +16,7 @@ import { StatusBadge } from './status-badge';
 import { PriorityBadge } from './priority-badge';
 import { cn, formatRelativeDate } from '@/lib/utils';
 import { MoreVertical, Pencil, Trash2, Calendar, ChevronDown, ChevronRight } from 'lucide-react';
+import { useTodoStore } from '@/stores/todo-store';
 
 interface TodoCardCompactProps {
   todo: Todo & {
@@ -28,9 +30,10 @@ interface TodoCardCompactProps {
   isFocused?: boolean;
   isSelected?: boolean;
   onSelect?: (id: string) => void;
+  isMultiSelectMode?: boolean;
 }
 
-export function TodoCardCompact({
+const TodoCardCompactComponent = ({
   todo,
   onToggle,
   onEdit,
@@ -38,8 +41,13 @@ export function TodoCardCompact({
   isFocused,
   isSelected,
   onSelect,
-}: TodoCardCompactProps) {
+  isMultiSelectMode,
+}: TodoCardCompactProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showDeleteButton, setShowDeleteButton] = useState(false);
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+
+  const toggleMultiSelectMode = useTodoStore(state => state.toggleMultiSelectMode);
 
   const isCompleted = todo.status === 'COMPLETED';
   const isCancelled = todo.status === 'CANCELLED';
@@ -49,30 +57,119 @@ export function TodoCardCompact({
 
   const isOverdue = todo.dueDate && new Date(todo.dueDate) < new Date() && !isCompleted;
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Handle multi-select with Cmd/Ctrl+click
+    if (onSelect && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      e.stopPropagation();
+      onSelect(todo.id);
+    }
+  };
+
+  // Swipe handlers for mobile
+  const swipeHandlers = useSwipeable({
+    onSwipedRight: () => {
+      // Swipe right to toggle completion
+      onToggle(todo.id);
+    },
+    onSwipedLeft: () => {
+      // Swipe left to show delete button
+      setShowDeleteButton(true);
+      setTimeout(() => setShowDeleteButton(false), 3000);
+    },
+    trackMouse: false, // Only track touch, not mouse
+  });
+
+  // Long press handler for multi-select mode
+  const handleTouchStart = () => {
+    longPressTimer.current = setTimeout(() => {
+      if (!isMultiSelectMode) {
+        toggleMultiSelectMode();
+        if (onSelect) {
+          onSelect(todo.id);
+        }
+      }
+    }, 500);
+  };
+
+  const handleTouchEnd = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current);
+      }
+    };
+  }, []);
+
   return (
     <div className="space-y-1">
       {/* Main Card */}
       <div
+        {...swipeHandlers}
+        onClick={handleCardClick}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
         className={cn(
-          'group flex items-center gap-2 p-2 rounded-lg',
+          'group flex items-center gap-2 p-2 rounded-lg relative',
           'transition-all duration-200',
           'bg-card/30 backdrop-blur-sm border border-border/30',
           'hover:bg-card/50 hover:border-border',
           isDimmed && 'opacity-50',
           isFocused && 'ring-2 ring-neon-cyan',
-          isSelected && 'ring-2 ring-neon-cyan bg-neon-cyan/5'
+          isSelected && 'ring-2 ring-neon-cyan bg-neon-cyan/5',
+          (isMultiSelectMode || isSelected) && 'cursor-pointer'
         )}
       >
-        {/* Checkbox */}
-        <Checkbox
-          checked={isCompleted}
-          onCheckedChange={() => onToggle(todo.id)}
-          className={cn(
-            'shrink-0 transition-all',
-            isCompleted &&
-              'data-[state=checked]:bg-neon-green data-[state=checked]:border-neon-green'
-          )}
-        />
+        {/* Delete Button (shown on swipe left) */}
+        {showDeleteButton && (
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 z-10 animate-in slide-in-from-right-2">
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(todo.id);
+              }}
+              className="h-8"
+            >
+              <Trash2 className="w-4 h-4 mr-1" />
+              Delete
+            </Button>
+          </div>
+        )}
+        {/* Multi-Select Checkbox (only shown in multi-select mode or when selected) */}
+        {(isMultiSelectMode || isSelected) && onSelect && (
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={() => onSelect(todo.id)}
+            onClick={(e) => e.stopPropagation()}
+            className={cn(
+              'shrink-0 transition-all',
+              isSelected && 'data-[state=checked]:bg-neon-cyan data-[state=checked]:border-neon-cyan'
+            )}
+          />
+        )}
+
+        {/* Status Checkbox */}
+        {!(isMultiSelectMode || isSelected) && (
+          <Checkbox
+            checked={isCompleted}
+            onCheckedChange={() => onToggle(todo.id)}
+            onClick={(e) => e.stopPropagation()}
+            className={cn(
+              'shrink-0 transition-all',
+              isCompleted &&
+                'data-[state=checked]:bg-neon-green data-[state=checked]:border-neon-green'
+            )}
+          />
+        )}
 
         {/* Expand/Collapse (if has description or subtasks) */}
         {(hasDescription || hasSubtasks) && (
@@ -225,4 +322,6 @@ export function TodoCardCompact({
       )}
     </div>
   );
-}
+};
+
+export const TodoCardCompact = memo(TodoCardCompactComponent);

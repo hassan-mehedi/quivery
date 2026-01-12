@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, memo } from 'react';
 import { Todo } from '@prisma/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -33,9 +33,12 @@ interface TodoCardProps {
   onUpdateSubtask?: (id: string, title: string) => Promise<void>;
   onDeleteSubtask?: (id: string) => Promise<void>;
   isFocused?: boolean;
+  isSelected?: boolean;
+  onSelect?: (id: string) => void;
+  isMultiSelectMode?: boolean;
 }
 
-export function TodoCard({
+const TodoCardComponent = ({
   todo,
   onToggle,
   onEdit,
@@ -46,7 +49,10 @@ export function TodoCard({
   onUpdateSubtask,
   onDeleteSubtask,
   isFocused,
-}: TodoCardProps) {
+  isSelected,
+  onSelect,
+  isMultiSelectMode,
+}: TodoCardProps) => {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [titleValue, setTitleValue] = useState(todo.title);
@@ -57,6 +63,15 @@ export function TodoCard({
   const isCompleted = todo.status === 'COMPLETED';
   const isCancelled = todo.status === 'CANCELLED';
   const isDimmed = isCompleted || isCancelled;
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Handle multi-select with Cmd/Ctrl+click
+    if (onSelect && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      e.stopPropagation();
+      onSelect(todo.id);
+    }
+  };
 
   useEffect(() => {
     setTitleValue(todo.title);
@@ -115,25 +130,44 @@ export function TodoCard({
 
   return (
     <Card
+      onClick={handleCardClick}
       className={cn(
         'group transition-all duration-200 border-border/50 hover:border-border',
         'bg-card/50 backdrop-blur-sm hover:bg-card/80',
         isDimmed && 'opacity-60',
-        isFocused && 'ring-2 ring-neon-cyan ring-offset-2 ring-offset-background'
+        isFocused && 'ring-2 ring-neon-cyan ring-offset-2 ring-offset-background',
+        isSelected && 'ring-2 ring-neon-cyan bg-neon-cyan/5',
+        (isMultiSelectMode || isSelected) && 'cursor-pointer'
       )}
     >
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
-          {/* Checkbox */}
-          <Checkbox
-            checked={isCompleted}
-            onCheckedChange={() => onToggle(todo.id)}
-            className={cn(
-              'mt-1 transition-all',
-              isCompleted &&
-                'data-[state=checked]:bg-neon-green data-[state=checked]:border-neon-green'
-            )}
-          />
+          {/* Multi-Select Checkbox (only shown in multi-select mode or when selected) */}
+          {(isMultiSelectMode || isSelected) && onSelect && (
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={() => onSelect(todo.id)}
+              onClick={(e) => e.stopPropagation()}
+              className={cn(
+                'mt-1 transition-all',
+                isSelected && 'data-[state=checked]:bg-neon-cyan data-[state=checked]:border-neon-cyan'
+              )}
+            />
+          )}
+
+          {/* Status Checkbox */}
+          {!(isMultiSelectMode || isSelected) && (
+            <Checkbox
+              checked={isCompleted}
+              onCheckedChange={() => onToggle(todo.id)}
+              onClick={(e) => e.stopPropagation()}
+              className={cn(
+                'mt-1 transition-all',
+                isCompleted &&
+                  'data-[state=checked]:bg-neon-green data-[state=checked]:border-neon-green'
+              )}
+            />
+          )}
 
           {/* Content */}
           <div className="flex-1 min-w-0 space-y-2">
@@ -260,4 +294,6 @@ export function TodoCard({
       </CardContent>
     </Card>
   );
-}
+};
+
+export const TodoCard = memo(TodoCardComponent);

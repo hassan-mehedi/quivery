@@ -4,16 +4,29 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Todo, Priority } from '@prisma/client';
 import { useTodos } from '@/hooks/use-todos';
 import { useTodoStore } from '@/stores/todo-store';
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+} from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { TodoCard } from './todo-card';
+import { DraggableTodoCard } from './draggable-todo-card';
 import { TodoDialog } from './todo-dialog';
 import { TodoFilters } from './todo-filters';
 import { QuickAddInput } from './quick-add-input';
 import { SearchBar } from './search-bar';
 import { GroupedTimelineView } from './grouped-timeline-view';
+import { BulkActionsBar } from './bulk-actions-bar';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, CheckSquare, Loader2, Keyboard, List, Calendar } from 'lucide-react';
+import { Plus, CheckSquare, Loader2, Keyboard, List, Calendar, CheckCheck } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,9 +54,16 @@ export function TodoView() {
     toggleStatus,
   } = useTodos();
 
-  // Get view mode from store
+  // Get view mode and multi-select from store
   const viewMode = useTodoStore(state => state.viewMode);
   const setViewMode = useTodoStore(state => state.setViewMode);
+  const isMultiSelectMode = useTodoStore(state => state.isMultiSelectMode);
+  const toggleMultiSelectMode = useTodoStore(state => state.toggleMultiSelectMode);
+  const selectedTodoIds = useTodoStore(state => state.selectedTodoIds);
+  const toggleTodoSelection = useTodoStore(state => state.toggleTodoSelection);
+  const selectAllVisible = useTodoStore(state => state.selectAllVisible);
+  const clearSelection = useTodoStore(state => state.clearSelection);
+  const bulkDelete = useTodoStore(state => state.bulkDelete);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
@@ -52,6 +72,16 @@ export function TodoView() {
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [showShortcutsHint, setShowShortcutsHint] = useState(false);
   const viewRef = useRef<HTMLDivElement>(null);
+
+  // Drag and drop state
+  const [activeTodoId, setActiveTodoId] = useState<string | null>(null);
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 8px movement required to start drag
+      },
+    })
+  );
 
   const handleCreate = () => {
     setEditingTodo(null);
@@ -132,6 +162,37 @@ export function TodoView() {
     await removeTodo(id);
   };
 
+  // Drag and drop handlers
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveTodoId(event.active.id as string);
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveTodoId(null);
+
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = todos.findIndex(t => t.id === active.id);
+    const newIndex = todos.findIndex(t => t.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    // Reorder todos locally for immediate feedback
+    const newTodos = [...todos];
+    const [movedTodo] = newTodos.splice(oldIndex, 1);
+    newTodos.splice(newIndex, 0, movedTodo);
+
+    // Update local state
+    newTodos.forEach((todo, index) => {
+      if (todo.sortOrder !== index) {
+        editTodo(todo.id, { sortOrder: index });
+      }
+    });
+  };
+
+  const activeTodo = todos.find(t => t.id === activeTodoId);
+
   // Keyboard navigation
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -147,6 +208,29 @@ export function TodoView() {
         return;
       }
 
+      // Toggle multi-select mode
+      if (e.key === 'm' || e.key === 'M') {
+        e.preventDefault();
+        toggleMultiSelectMode();
+        return;
+      }
+
+      // Select all visible todos
+      if ((e.metaKey || e.ctrlKey) && e.key === 'a') {
+        e.preventDefault();
+        const visibleTodoIds = todos.map(t => t.id);
+        selectAllVisible(visibleTodoIds);
+        return;
+      }
+
+      // Bulk delete selected todos
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedTodoIds.size > 0) {
+        e.preventDefault();
+        const selectedIds = Array.from(selectedTodoIds);
+        bulkDelete(selectedIds).then(() => clearSelection());
+        return;
+      }
+
       // Show keyboard shortcuts hint
       if (e.key === '?' && e.shiftKey) {
         e.preventDefault();
@@ -154,10 +238,13 @@ export function TodoView() {
         return;
       }
 
-      // Escape to clear focus
+      // Escape to clear focus and selection
       if (e.key === 'Escape') {
         setFocusedTodoId(null);
         setShowShortcutsHint(false);
+        if (isMultiSelectMode || selectedTodoIds.size > 0) {
+          clearSelection();
+        }
         return;
       }
 
@@ -197,14 +284,44 @@ export function TodoView() {
         return;
       }
 
-      // Delete/Backspace - delete todo
-      if ((e.key === 'Delete' || e.key === 'Backspace') && focusedTodoId) {
+      // Delete/Backspace - delete focused todo (only if no selection)
+      if ((e.key === 'Delete' || e.key === 'Backspace') && focusedTodoId && selectedTodoIds.size === 0) {
         e.preventDefault();
         setDeleteId(focusedTodoId);
         return;
       }
+
+      // Priority shortcuts - 1 (Urgent), 2 (High), 3 (Medium), 4 (Low)
+      if (focusedTodoId && ['1', '2', '3', '4'].includes(e.key)) {
+        e.preventDefault();
+        const priorityMap: Record<string, Priority> = {
+          '1': 'URGENT',
+          '2': 'HIGH',
+          '3': 'MEDIUM',
+          '4': 'LOW',
+        };
+        handleUpdate(focusedTodoId, { priority: priorityMap[e.key] });
+        return;
+      }
+
+      // Duplicate todo - Cmd/Ctrl+D
+      if ((e.metaKey || e.ctrlKey) && e.key === 'd' && focusedTodoId) {
+        e.preventDefault();
+        const todo = todos.find(t => t.id === focusedTodoId);
+        if (todo) {
+          createTodo({
+            title: `${todo.title} (copy)`,
+            description: todo.description,
+            status: 'PENDING',
+            priority: todo.priority,
+            dueDate: todo.dueDate ? new Date(todo.dueDate).toISOString() : undefined,
+            projectId: todo.projectId,
+          });
+        }
+        return;
+      }
     },
-    [todos, focusedTodoId, setFocusedTodoId]
+    [todos, focusedTodoId, setFocusedTodoId, isMultiSelectMode, selectedTodoIds, toggleMultiSelectMode, selectAllVisible, clearSelection, bulkDelete, handleUpdate, createTodo]
   );
 
   useEffect(() => {
@@ -277,6 +394,16 @@ export function TodoView() {
           </div>
 
           <Button
+            onClick={toggleMultiSelectMode}
+            variant={isMultiSelectMode ? 'default' : 'outline'}
+            size="icon"
+            className={isMultiSelectMode ? 'neon-glow-cyan' : ''}
+            title="Multi-select mode (M)"
+          >
+            <CheckCheck className="w-4 h-4" />
+          </Button>
+
+          <Button
             onClick={() => setShowShortcutsHint(prev => !prev)}
             variant="outline"
             size="icon"
@@ -294,34 +421,93 @@ export function TodoView() {
       {/* Keyboard Shortcuts Hint */}
       {showShortcutsHint && (
         <div className="bg-neon-cyan/10 border border-neon-cyan/30 rounded-lg p-4">
-          <h3 className="font-semibold text-neon-cyan mb-2 flex items-center gap-2">
+          <h3 className="font-semibold text-neon-cyan mb-3 flex items-center gap-2">
             <Keyboard className="w-4 h-4" />
             Keyboard Shortcuts
           </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+          <div className="space-y-4">
+            {/* Navigation */}
             <div>
-              <kbd className="px-2 py-1 bg-muted rounded text-xs mr-2">Q</kbd>
-              <span className="text-muted-foreground">Quick add todo</span>
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Navigation</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                <div>
+                  <kbd className="px-2 py-1 bg-muted rounded text-xs mr-2">↑↓</kbd>
+                  <span className="text-muted-foreground">Navigate todos</span>
+                </div>
+                <div>
+                  <kbd className="px-2 py-1 bg-muted rounded text-xs mr-2">/</kbd>
+                  <span className="text-muted-foreground">Focus search</span>
+                </div>
+                <div>
+                  <kbd className="px-2 py-1 bg-muted rounded text-xs mr-2">Esc</kbd>
+                  <span className="text-muted-foreground">Clear selection</span>
+                </div>
+              </div>
             </div>
+
+            {/* Actions */}
             <div>
-              <kbd className="px-2 py-1 bg-muted rounded text-xs mr-2">/</kbd>
-              <span className="text-muted-foreground">Focus search</span>
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Actions</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                <div>
+                  <kbd className="px-2 py-1 bg-muted rounded text-xs mr-2">Q</kbd>
+                  <span className="text-muted-foreground">Quick add todo</span>
+                </div>
+                <div>
+                  <kbd className="px-2 py-1 bg-muted rounded text-xs mr-2">Space</kbd>
+                  <span className="text-muted-foreground">Toggle complete</span>
+                </div>
+                <div>
+                  <kbd className="px-2 py-1 bg-muted rounded text-xs mr-2">Enter</kbd>
+                  <span className="text-muted-foreground">Edit details</span>
+                </div>
+                <div>
+                  <kbd className="px-2 py-1 bg-muted rounded text-xs mr-2">Del</kbd>
+                  <span className="text-muted-foreground">Delete todo(s)</span>
+                </div>
+                <div>
+                  <kbd className="px-2 py-1 bg-muted rounded text-xs mr-2">Cmd/Ctrl+D</kbd>
+                  <span className="text-muted-foreground">Duplicate todo</span>
+                </div>
+              </div>
             </div>
+
+            {/* Editing */}
             <div>
-              <kbd className="px-2 py-1 bg-muted rounded text-xs mr-2">↑↓</kbd>
-              <span className="text-muted-foreground">Navigate todos</span>
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Editing</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                <div>
+                  <kbd className="px-2 py-1 bg-muted rounded text-xs mr-2">1</kbd>
+                  <span className="text-muted-foreground">Urgent priority</span>
+                </div>
+                <div>
+                  <kbd className="px-2 py-1 bg-muted rounded text-xs mr-2">2</kbd>
+                  <span className="text-muted-foreground">High priority</span>
+                </div>
+                <div>
+                  <kbd className="px-2 py-1 bg-muted rounded text-xs mr-2">3</kbd>
+                  <span className="text-muted-foreground">Medium priority</span>
+                </div>
+                <div>
+                  <kbd className="px-2 py-1 bg-muted rounded text-xs mr-2">4</kbd>
+                  <span className="text-muted-foreground">Low priority</span>
+                </div>
+              </div>
             </div>
+
+            {/* Bulk Operations */}
             <div>
-              <kbd className="px-2 py-1 bg-muted rounded text-xs mr-2">Space</kbd>
-              <span className="text-muted-foreground">Toggle complete</span>
-            </div>
-            <div>
-              <kbd className="px-2 py-1 bg-muted rounded text-xs mr-2">Enter</kbd>
-              <span className="text-muted-foreground">Edit details</span>
-            </div>
-            <div>
-              <kbd className="px-2 py-1 bg-muted rounded text-xs mr-2">Del</kbd>
-              <span className="text-muted-foreground">Delete todo</span>
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Bulk Operations</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                <div>
+                  <kbd className="px-2 py-1 bg-muted rounded text-xs mr-2">M</kbd>
+                  <span className="text-muted-foreground">Multi-select mode</span>
+                </div>
+                <div>
+                  <kbd className="px-2 py-1 bg-muted rounded text-xs mr-2">Cmd/Ctrl+A</kbd>
+                  <span className="text-muted-foreground">Select all</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -378,24 +564,66 @@ export function TodoView() {
           focusedTodoId={focusedTodoId}
         />
       ) : (
-        <div className="space-y-2">
-          {todos.map(todo => (
-            <TodoCard
-              key={todo.id}
-              todo={todo}
-              onToggle={handleToggle}
-              onEdit={handleEdit}
-              onDelete={setDeleteId}
-              onUpdate={handleUpdate}
-              onCreateSubtask={handleCreateSubtask}
-              onToggleSubtask={handleToggle}
-              onUpdateSubtask={handleUpdateSubtask}
-              onDeleteSubtask={handleDeleteSubtask}
-              isFocused={focusedTodoId === todo.id}
-            />
-          ))}
-        </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext items={todos.map(t => t.id)} strategy={verticalListSortingStrategy}>
+            <div className="space-y-2">
+              {todos.map(todo => (
+                <DraggableTodoCard
+                  key={todo.id}
+                  todo={todo}
+                  onToggle={handleToggle}
+                  onEdit={handleEdit}
+                  onDelete={setDeleteId}
+                  onUpdate={handleUpdate}
+                  onCreateSubtask={handleCreateSubtask}
+                  onToggleSubtask={handleToggle}
+                  onUpdateSubtask={handleUpdateSubtask}
+                  onDeleteSubtask={handleDeleteSubtask}
+                  isFocused={focusedTodoId === todo.id}
+                  isSelected={selectedTodoIds.has(todo.id)}
+                  onSelect={toggleTodoSelection}
+                  isMultiSelectMode={isMultiSelectMode}
+                />
+              ))}
+            </div>
+          </SortableContext>
+
+          {/* Drag Overlay */}
+          <DragOverlay>
+            {activeTodo ? (
+              <div className="opacity-90 rotate-2 scale-105">
+                <TodoCard
+                  todo={activeTodo}
+                  onToggle={() => {}}
+                  onEdit={() => {}}
+                  onDelete={() => {}}
+                  onUpdate={async () => {}}
+                />
+              </div>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
       )}
+
+      {/* Bulk Actions Bar */}
+      <BulkActionsBar />
+
+      {/* Floating Add Button (Mobile Only) */}
+      <div className="fixed bottom-6 right-6 md:hidden z-40">
+        <Button
+          onClick={handleCreate}
+          size="lg"
+          className="h-14 w-14 rounded-full shadow-lg neon-glow-cyan"
+          title="Add Todo"
+        >
+          <Plus className="w-6 h-6" />
+        </Button>
+      </div>
 
       {/* Create/Edit Dialog */}
       <TodoDialog

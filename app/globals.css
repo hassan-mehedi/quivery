@@ -178,3 +178,77 @@
   background: currentColor;
   border-radius: 2px;
 }
+
+/* Mobile optimizations */
+@media (max-width: 640px) {
+  /* Larger touch targets on mobile */
+  button,
+  [role='button'] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Better spacing for mobile */
+  .todo-card-compact {
+    padding: 12px;
+  }
+
+  /* Stack badges vertically on mobile */
+  .todo-badges {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  /* Simplified timeline sections on mobile */
+  .timeline-section {
+    margin-bottom: 1rem;
+  }
+
+  /* Floating button positioning to avoid overlap with bulk actions bar */
+  .floating-add-button {
+    bottom: calc(env(safe-area-inset-bottom) + 5rem);
+  }
+
+  /* Bulk actions bar respects safe areas */
+  .bulk-actions-bar {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Better keyboard shortcuts display on mobile */
+  .keyboard-shortcuts {
+    grid-template-columns: 1fr;
+    font-size: 0.875rem;
+  }
+}
+
+/* Smooth animations for mobile interactions */
+@media (prefers-reduced-motion: no-preference) {
+  .swipe-hint {
+    animation: swipeHint 2s ease-in-out infinite;
+  }
+
+  @keyframes swipeHint {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    50% {
+      transform: translateX(-4px);
+    }
+  }
+}
+
+/* Loading skeleton improvements */
+.skeleton {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
