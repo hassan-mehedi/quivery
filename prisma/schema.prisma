@@ -18,6 +18,7 @@ model User {
   todos         Todo[]
   notes         Note[]
   tags          Tag[]
+  projects      Project[]
 }
 
 model Todo {
@@ -30,12 +31,26 @@ model Todo {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
+  // New fields
+  parentId    String?
+  sortOrder   Int         @default(0)
+  completedAt DateTime?
+  projectId   String?
+
   userId      String
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Relations
+  parent      Todo?       @relation("TodoSubtasks", fields: [parentId], references: [id], onDelete: Cascade)
+  subtasks    Todo[]      @relation("TodoSubtasks")
+  project     Project?    @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  tags        TodoTag[]
 
   @@index([userId])
   @@index([status])
   @@index([priority])
+  @@index([parentId])
+  @@index([projectId])
 }
 
 model Note {
@@ -64,6 +79,7 @@ model Tag {
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   notes       NoteTag[]
+  todos       TodoTag[]
 
   @@unique([name, userId])
   @@index([userId])
@@ -77,6 +93,33 @@ model NoteTag {
   tag         Tag       @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@id([noteId, tagId])
+}
+
+model Project {
+  id          String    @id @default(cuid())
+  name        String
+  color       String    @default("#8B5CF6")
+  icon        String?
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  todos       Todo[]
+
+  @@unique([name, userId])
+  @@index([userId])
+}
+
+model TodoTag {
+  todoId      String
+  tagId       String
+
+  todo        Todo      @relation(fields: [todoId], references: [id], onDelete: Cascade)
+  tag         Tag       @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([todoId, tagId])
 }
 
 enum TodoStatus {

@@ -1,17 +1,19 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Todo } from '@prisma/client';
+import { Todo, Priority } from '@prisma/client';
 import { useTodos } from '@/hooks/use-todos';
+import { useTodoStore } from '@/stores/todo-store';
 import { TodoCard } from './todo-card';
 import { TodoDialog } from './todo-dialog';
 import { TodoFilters } from './todo-filters';
 import { QuickAddInput } from './quick-add-input';
 import { SearchBar } from './search-bar';
+import { GroupedTimelineView } from './grouped-timeline-view';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, CheckSquare, Loader2, Keyboard } from 'lucide-react';
+import { Plus, CheckSquare, Loader2, Keyboard, List, Calendar } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,6 +40,10 @@ export function TodoView() {
     removeTodo,
     toggleStatus,
   } = useTodos();
+
+  // Get view mode from store
+  const viewMode = useTodoStore(state => state.viewMode);
+  const setViewMode = useTodoStore(state => state.setViewMode);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
@@ -87,13 +93,43 @@ export function TodoView() {
     }
   };
 
-  const handleQuickAdd = async (title: string) => {
-    await createTodo({ title, status: 'PENDING', priority: 'MEDIUM' });
+  const handleQuickAdd = async (data: {
+    title: string;
+    priority?: Priority;
+    dueDate?: string;
+    projectId?: string;
+    tagIds?: string[];
+  }) => {
+    await createTodo({
+      title: data.title,
+      status: 'PENDING',
+      priority: data.priority || 'MEDIUM',
+      dueDate: data.dueDate,
+      projectId: data.projectId,
+      tagIds: data.tagIds,
+    });
     setShowQuickAdd(false);
   };
 
   const handleUpdate = async (id: string, updates: Partial<Todo>) => {
     await editTodo(id, updates);
+  };
+
+  const handleCreateSubtask = async (parentId: string, title: string) => {
+    await createTodo({
+      title,
+      status: 'PENDING',
+      priority: 'MEDIUM',
+      parentId,
+    });
+  };
+
+  const handleUpdateSubtask = async (id: string, title: string) => {
+    await editTodo(id, { title });
+  };
+
+  const handleDeleteSubtask = async (id: string) => {
+    await removeTodo(id);
   };
 
   // Keyboard navigation
@@ -188,6 +224,18 @@ export function TodoView() {
     }
   }, []);
 
+  // Persist view mode to localStorage
+  useEffect(() => {
+    const savedViewMode = localStorage.getItem('todo-view-mode');
+    if (savedViewMode && (savedViewMode === 'timeline' || savedViewMode === 'list')) {
+      setViewMode(savedViewMode);
+    }
+  }, [setViewMode]);
+
+  useEffect(() => {
+    localStorage.setItem('todo-view-mode', viewMode);
+  }, [viewMode]);
+
   const completedCount = todos.filter(t => t.status === 'COMPLETED').length;
   const totalCount = todos.length;
 
@@ -206,6 +254,28 @@ export function TodoView() {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* View Mode Toggle */}
+          <div className="flex items-center border border-border rounded-lg p-1">
+            <Button
+              onClick={() => setViewMode('timeline')}
+              variant={viewMode === 'timeline' ? 'default' : 'ghost'}
+              size="sm"
+              className={viewMode === 'timeline' ? 'neon-glow-cyan' : ''}
+              title="Timeline view"
+            >
+              <Calendar className="w-4 h-4" />
+            </Button>
+            <Button
+              onClick={() => setViewMode('list')}
+              variant={viewMode === 'list' ? 'default' : 'ghost'}
+              size="sm"
+              className={viewMode === 'list' ? 'neon-glow-cyan' : ''}
+              title="List view"
+            >
+              <List className="w-4 h-4" />
+            </Button>
+          </div>
+
           <Button
             onClick={() => setShowShortcutsHint(prev => !prev)}
             variant="outline"
@@ -271,9 +341,13 @@ export function TodoView() {
       <TodoFilters
         status={filter.status}
         priority={filter.priority}
+        projectId={filter.projectId}
+        tagIds={filter.tagIds}
         onStatusChange={status => setFilter({ status })}
         onPriorityChange={priority => setFilter({ priority })}
-        onClear={() => setFilter({ status: 'ALL', priority: 'ALL' })}
+        onProjectChange={projectId => setFilter({ projectId })}
+        onTagChange={tagIds => setFilter({ tagIds })}
+        onClear={() => setFilter({ status: 'ALL', priority: 'ALL', projectId: 'ALL', tagIds: [] })}
       />
 
       {/* Content */}
@@ -295,8 +369,16 @@ export function TodoView() {
             </Button>
           }
         />
+      ) : viewMode === 'timeline' ? (
+        <GroupedTimelineView
+          todos={todos}
+          onToggle={handleToggle}
+          onEdit={handleEdit}
+          onDelete={setDeleteId}
+          focusedTodoId={focusedTodoId}
+        />
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {todos.map(todo => (
             <TodoCard
               key={todo.id}
@@ -305,6 +387,10 @@ export function TodoView() {
               onEdit={handleEdit}
               onDelete={setDeleteId}
               onUpdate={handleUpdate}
+              onCreateSubtask={handleCreateSubtask}
+              onToggleSubtask={handleToggle}
+              onUpdateSubtask={handleUpdateSubtask}
+              onDeleteSubtask={handleDeleteSubtask}
               isFocused={focusedTodoId === todo.id}
             />
           ))}

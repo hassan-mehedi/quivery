@@ -16,15 +16,22 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { StatusBadge } from './status-badge';
 import { PriorityBadge } from './priority-badge';
+import { SubtaskList } from './subtask-list';
 import { cn, formatRelativeDate } from '@/lib/utils';
 import { MoreVertical, Pencil, Trash2, Calendar } from 'lucide-react';
 
 interface TodoCardProps {
-  todo: Todo;
+  todo: Todo & {
+    subtasks?: Todo[];
+  };
   onToggle: (id: string) => void;
   onEdit: (todo: Todo) => void;
   onDelete: (id: string) => void;
   onUpdate: (id: string, updates: Partial<Todo>) => Promise<void>;
+  onCreateSubtask?: (parentId: string, title: string) => Promise<void>;
+  onToggleSubtask?: (id: string) => void;
+  onUpdateSubtask?: (id: string, title: string) => Promise<void>;
+  onDeleteSubtask?: (id: string) => Promise<void>;
   isFocused?: boolean;
 }
 
@@ -34,6 +41,10 @@ export function TodoCard({
   onEdit,
   onDelete,
   onUpdate,
+  onCreateSubtask,
+  onToggleSubtask,
+  onUpdateSubtask,
+  onDeleteSubtask,
   isFocused,
 }: TodoCardProps) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -227,6 +238,18 @@ export function TodoCard({
                 </span>
               )}
             </div>
+
+            {/* Subtasks */}
+            {todo.subtasks && todo.subtasks.length > 0 && onCreateSubtask && onToggleSubtask && onUpdateSubtask && onDeleteSubtask && (
+              <SubtaskList
+                subtasks={todo.subtasks}
+                parentId={todo.id}
+                onCreateSubtask={onCreateSubtask}
+                onToggleSubtask={onToggleSubtask}
+                onUpdateSubtask={onUpdateSubtask}
+                onDeleteSubtask={onDeleteSubtask}
+              />
+            )}
           </div>
         </div>
       </CardContent>

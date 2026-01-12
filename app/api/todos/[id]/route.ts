@@ -54,18 +54,73 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       return NextResponse.json({ error: 'Todo not found' }, { status: 404 });
     }
 
-    const { title, description, status, priority, dueDate } = body;
+    const { title, description, status, priority, dueDate, projectId, tagIds, parentId, sortOrder } = body;
+
+    // Update the todo
+    const updateData: any = {
+      ...(title !== undefined && { title: title.trim() }),
+      ...(description !== undefined && { description: description?.trim() || null }),
+      ...(status !== undefined && { status }),
+      ...(priority !== undefined && { priority }),
+      ...(dueDate !== undefined && { dueDate: dueDate ? new Date(dueDate) : null }),
+      ...(projectId !== undefined && { projectId: projectId || null }),
+      ...(parentId !== undefined && { parentId: parentId || null }),
+      ...(sortOrder !== undefined && { sortOrder }),
+    };
+
+    // Track completion time
+    if (status === 'COMPLETED' && existing.status !== 'COMPLETED') {
+      updateData.completedAt = new Date();
+    } else if (status !== 'COMPLETED' && status !== undefined) {
+      updateData.completedAt = null;
+    }
 
     const todo = await prisma.todo.update({
       where: { id },
-      data: {
-        ...(title !== undefined && { title: title.trim() }),
-        ...(description !== undefined && { description: description?.trim() || null }),
-        ...(status !== undefined && { status }),
-        ...(priority !== undefined && { priority }),
-        ...(dueDate !== undefined && { dueDate: dueDate ? new Date(dueDate) : null }),
+      data: updateData,
+      include: {
+        project: true,
+        tags: {
+          include: {
+            tag: true,
+          },
+        },
       },
     });
+
+    // Update tags if provided
+    if (tagIds !== undefined && Array.isArray(tagIds)) {
+      // Delete existing tags
+      await prisma.todoTag.deleteMany({
+        where: { todoId: id },
+      });
+
+      // Add new tags
+      if (tagIds.length > 0) {
+        await prisma.todoTag.createMany({
+          data: tagIds.map((tagId: string) => ({
+            todoId: id,
+            tagId,
+          })),
+          skipDuplicates: true,
+        });
+      }
+
+      // Fetch the updated todo with new tags
+      const updatedTodo = await prisma.todo.findUnique({
+        where: { id },
+        include: {
+          project: true,
+          tags: {
+            include: {
+              tag: true,
+            },
+          },
+        },
+      });
+
+      return NextResponse.json(updatedTodo);
+    }
 
     return NextResponse.json(todo);
   } catch (error) {
