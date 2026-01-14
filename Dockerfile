@@ -14,6 +14,10 @@ RUN yarn install --frozen-lockfile
 FROM node:25-alpine AS builder
 WORKDIR /app
 
+# Set placeholder DATABASE_URL for build phase
+# This is standard practice - real credentials provided at runtime
+ENV DATABASE_URL="postgresql://user:pass@localhost:5432/db?sslmode=require"
+
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -21,8 +25,7 @@ COPY . .
 # Generate Prisma Client
 RUN npx prisma generate
 
-# Build Next.js application (skip env validation during build)
-ENV SKIP_ENV_VALIDATION=1
+# Build Next.js application
 RUN yarn build
 
 # Stage 3: Runner

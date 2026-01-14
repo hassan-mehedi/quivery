@@ -9,11 +9,6 @@ function createPrismaClient() {
   // Get pooled database URL from environment
   const databaseUrl = process.env.DATABASE_URL;
 
-  // During build time, return a mock client to prevent errors
-  if (!databaseUrl && process.env.SKIP_ENV_VALIDATION === '1') {
-    return new PrismaClient();
-  }
-
   if (!databaseUrl) {
     throw new Error('DATABASE_URL environment variable is not set. Please check your .env file.');
   }
