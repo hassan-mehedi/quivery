@@ -14,12 +14,6 @@ RUN yarn install --frozen-lockfile
 FROM node:25-alpine AS builder
 WORKDIR /app
 
-# Arguments for build-time environment variables
-ARG DATABASE_URL
-ARG NEXTAUTH_SECRET
-ENV DATABASE_URL=$DATABASE_URL
-ENV NEXTAUTH_SECRET=$NEXTAUTH_SECRET
-
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -27,7 +21,8 @@ COPY . .
 # Generate Prisma Client
 RUN npx prisma generate
 
-# Build Next.js application
+# Build Next.js application (skip env validation during build)
+ENV SKIP_ENV_VALIDATION=1
 RUN yarn build
 
 # Stage 3: Runner
