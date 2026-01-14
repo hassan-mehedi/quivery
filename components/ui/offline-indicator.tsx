@@ -5,12 +5,14 @@ import { WifiOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function OfflineIndicator() {
-  const [isOffline, setIsOffline] = useState(false);
+  const [isOffline, setIsOffline] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return !navigator.onLine;
+    }
+    return false;
+  });
 
   useEffect(() => {
-    // Check initial online status after mount
-    setIsOffline(!navigator.onLine);
-
     const handleOnline = () => setIsOffline(false);
     const handleOffline = () => setIsOffline(true);
 
