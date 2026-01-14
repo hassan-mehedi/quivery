@@ -46,8 +46,8 @@ export function QuickAddInput({ onSubmit, onCancel, isVisible }: QuickAddInputPr
     return projects.find(p => p.name.toLowerCase() === parsed.projectName?.toLowerCase());
   }, [parsed?.projectName, projects]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (!title.trim() || isSubmitting) return;
 
     setIsSubmitting(true);
@@ -79,7 +79,7 @@ export function QuickAddInput({ onSubmit, onCancel, isVisible }: QuickAddInputPr
       // Cmd/Ctrl+Enter to submit without parsing
       e.preventDefault();
       setUseNLP(false);
-      handleSubmit(e as React.FormEvent<HTMLFormElement>);
+      handleSubmit();
       setUseNLP(true);
     }
   };
