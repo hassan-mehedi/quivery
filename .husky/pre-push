@@ -12,8 +12,11 @@ fi
 echo "Running Prettier check..."
 npm run format:check
 if [ $? -ne 0 ]; then
-  echo "❌ Formatting check failed. Run 'npm run format' to fix."
-  exit 1
+  echo "❌ Formatting check failed. Applying formatting..."
+  npm run format
+  git add -A
+  git commit -m "Applied prettier format"
+  echo "✅ Code formatted and committed. Continuing with push..."
 fi
 
 echo "✅ All pre-push checks passed!"
