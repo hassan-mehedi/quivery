@@ -1,50 +1,7 @@
-# Stage 1: Dependencies
-FROM node:22-alpine AS deps
+FROM node:25-alpine
 WORKDIR /app
-
-# Install dependencies needed for node-gyp
-RUN apk add --no-cache libc6-compat
-
 COPY package.json yarn.lock ./
-COPY prisma ./prisma
 RUN yarn install --frozen-lockfile
-
-# Stage 2: Builder
-FROM node:22-alpine AS builder
-WORKDIR /app
-
-COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-
-# Generate Prisma Client
-RUN yarn prisma generate
-
-# Build application
-ENV NEXT_TELEMETRY_DISABLED=1
-RUN yarn build
-
-# Stage 3: Runner
-FROM node:22-alpine AS runner
-WORKDIR /app
-
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
-
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
-# Copy necessary files
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/prisma ./prisma
-
-USER nextjs
-
 EXPOSE 3000
-
-ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
-
-CMD ["node", "server.js"]
+CMD ["yarn", "dev"]
