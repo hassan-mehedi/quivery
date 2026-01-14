@@ -47,7 +47,9 @@ export function DraggableNoteCard({
       case 'list':
         return <NoteListCard note={note} selected={selected} focused={focused} onClick={onClick} />;
       case 'compact':
-        return <NoteCompactCard note={note} selected={selected} focused={focused} onClick={onClick} />;
+        return (
+          <NoteCompactCard note={note} selected={selected} focused={focused} onClick={onClick} />
+        );
     }
   })();
 

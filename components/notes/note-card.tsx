@@ -35,9 +35,7 @@ export function NoteCard({ note, selected, focused = false, onClick }: NoteCardP
       className={cn(
         'w-full text-left p-4 rounded-lg border transition-all',
         'hover:bg-accent/80 hover:border-primary/50',
-        selected
-          ? 'bg-accent border-primary/70 ring-1 ring-primary/30'
-          : 'bg-card border-border',
+        selected ? 'bg-accent border-primary/70 ring-1 ring-primary/30' : 'bg-card border-border',
         focused && 'ring-2 ring-neon-purple/60 border-neon-purple/50'
       )}
     >

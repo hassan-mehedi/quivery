@@ -25,9 +25,7 @@ export function ViewModeToggle({ mode, onChange }: ViewModeToggleProps) {
             px-3 py-1.5 transition-all duration-200
             hover:bg-accent/80
             ${
-              mode === value
-                ? 'bg-primary/20 text-primary'
-                : 'bg-transparent text-muted-foreground'
+              mode === value ? 'bg-primary/20 text-primary' : 'bg-transparent text-muted-foreground'
             }
           `}
           title={label}

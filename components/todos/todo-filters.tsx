@@ -59,16 +59,13 @@ export function TodoFilters({
   useEffect(() => {
     // Fetch tags
     fetch('/api/tags')
-      .then(res => res.ok ? res.json() : [])
+      .then(res => (res.ok ? res.json() : []))
       .then(data => setTags(data))
       .catch(() => setTags([]));
   }, []);
 
   const hasFilters =
-    status !== 'ALL' ||
-    priority !== 'ALL' ||
-    projectId !== 'ALL' ||
-    tagIds.length > 0;
+    status !== 'ALL' || priority !== 'ALL' || projectId !== 'ALL' || tagIds.length > 0;
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -114,7 +111,7 @@ export function TodoFilters({
 
       <Select
         value={tagIds.length > 0 ? tagIds[0] : 'ALL'}
-        onValueChange={(value) => onTagChange(value === 'ALL' ? [] : [value])}
+        onValueChange={value => onTagChange(value === 'ALL' ? [] : [value])}
       >
         <SelectTrigger className="w-[140px] h-9 text-sm" suppressHydrationWarning>
           <SelectValue />

@@ -6,17 +6,8 @@ import { Tag } from '@prisma/client';
 import { toast } from 'sonner';
 
 export function useTags() {
-  const {
-    tags,
-    isLoading,
-    error,
-    setTags,
-    addTag,
-    updateTag,
-    deleteTag,
-    setLoading,
-    setError,
-  } = useTagStore();
+  const { tags, isLoading, error, setTags, addTag, updateTag, deleteTag, setLoading, setError } =
+    useTagStore();
 
   const fetchTags = useCallback(async () => {
     setLoading(true);
@@ -41,10 +32,7 @@ export function useTags() {
   }, [setTags, setLoading, setError]);
 
   const createTag = useCallback(
-    async (data: {
-      name: string;
-      color?: string;
-    }) => {
+    async (data: { name: string; color?: string }) => {
       try {
         const response = await fetch('/api/tags', {
           method: 'POST',

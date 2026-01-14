@@ -26,14 +26,9 @@ interface DraggableTodoCardProps {
 }
 
 export function DraggableTodoCard(props: DraggableTodoCardProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: props.todo.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: props.todo.id,
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),

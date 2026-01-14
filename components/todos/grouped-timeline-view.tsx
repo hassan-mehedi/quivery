@@ -24,7 +24,13 @@ export function GroupedTimelineView({
   onDelete,
   focusedTodoId,
 }: GroupedTimelineViewProps) {
-  const { expandedSections, toggleSection, selectedTodoIds, toggleTodoSelection, isMultiSelectMode } = useTodoStore();
+  const {
+    expandedSections,
+    toggleSection,
+    selectedTodoIds,
+    toggleTodoSelection,
+    isMultiSelectMode,
+  } = useTodoStore();
 
   // Group todos by timeline
   const groups = useMemo(() => groupTodosByTimeline(todos), [todos]);

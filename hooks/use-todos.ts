@@ -36,41 +36,52 @@ export function useTodos() {
     );
   }, [todos, searchQuery]);
 
-  const fetchTodos = useCallback(async (includeRelations = true) => {
-    setLoading(true);
-    setError(null);
+  const fetchTodos = useCallback(
+    async (includeRelations = true) => {
+      setLoading(true);
+      setError(null);
 
-    try {
-      const params = new URLSearchParams();
-      if (filter.status !== 'ALL') params.set('status', filter.status);
-      if (filter.priority !== 'ALL') params.set('priority', filter.priority);
-      if (filter.projectId !== 'ALL') params.set('projectId', filter.projectId);
-      if (filter.tagIds && filter.tagIds.length > 0) {
-        // For simplicity, filter by first tag (can be enhanced to support multiple)
-        params.set('tagId', filter.tagIds[0]);
+      try {
+        const params = new URLSearchParams();
+        if (filter.status !== 'ALL') params.set('status', filter.status);
+        if (filter.priority !== 'ALL') params.set('priority', filter.priority);
+        if (filter.projectId !== 'ALL') params.set('projectId', filter.projectId);
+        if (filter.tagIds && filter.tagIds.length > 0) {
+          // For simplicity, filter by first tag (can be enhanced to support multiple)
+          params.set('tagId', filter.tagIds[0]);
+        }
+
+        // Include relations by default
+        if (includeRelations) {
+          params.set('include', 'project,tags,subtasks');
+        }
+
+        const response = await fetch(`/api/todos?${params}`);
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch todos');
+        }
+
+        const data = await response.json();
+        setTodos(data);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to fetch todos';
+        setError(message);
+        toast.error(message);
+      } finally {
+        setLoading(false);
       }
-
-      // Include relations by default
-      if (includeRelations) {
-        params.set('include', 'project,tags,subtasks');
-      }
-
-      const response = await fetch(`/api/todos?${params}`);
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch todos');
-      }
-
-      const data = await response.json();
-      setTodos(data);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to fetch todos';
-      setError(message);
-      toast.error(message);
-    } finally {
-      setLoading(false);
-    }
-  }, [filter.status, filter.priority, filter.projectId, filter.tagIds, setTodos, setLoading, setError]);
+    },
+    [
+      filter.status,
+      filter.priority,
+      filter.projectId,
+      filter.tagIds,
+      setTodos,
+      setLoading,
+      setError,
+    ]
+  );
 
   const createTodo = useCallback(
     async (data: {
@@ -217,7 +228,10 @@ export function useTodos() {
   );
 
   const bulkUpdate = useCallback(
-    async (ids: string[], updates: { status?: TodoStatus; priority?: Priority; projectId?: string }) => {
+    async (
+      ids: string[],
+      updates: { status?: TodoStatus; priority?: Priority; projectId?: string }
+    ) => {
       try {
         const response = await fetch('/api/todos/bulk', {
           method: 'POST',

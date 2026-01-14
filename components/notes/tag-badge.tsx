@@ -13,7 +13,14 @@ interface TagBadgeProps {
   size?: 'sm' | 'md';
 }
 
-export function TagBadge({ tag, onRemove, selected, onClick, className, size = 'md' }: TagBadgeProps) {
+export function TagBadge({
+  tag,
+  onRemove,
+  selected,
+  onClick,
+  className,
+  size = 'md',
+}: TagBadgeProps) {
   return (
     <span
       className={cn(
@@ -28,7 +35,7 @@ export function TagBadge({ tag, onRemove, selected, onClick, className, size = '
         backgroundColor: `${tag.color}20`,
         borderColor: `${tag.color}50`,
         color: tag.color,
-        ...(selected && { '--tw-ring-color': tag.color } as React.CSSProperties),
+        ...(selected && ({ '--tw-ring-color': tag.color } as React.CSSProperties)),
       }}
       onClick={onClick}
     >

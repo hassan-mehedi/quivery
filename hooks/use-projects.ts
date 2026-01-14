@@ -43,11 +43,7 @@ export function useProjects() {
   }, [setProjects, setLoading, setError]);
 
   const createProject = useCallback(
-    async (data: {
-      name: string;
-      color?: string;
-      icon?: string;
-    }) => {
+    async (data: { name: string; color?: string; icon?: string }) => {
       try {
         const response = await fetch('/api/projects', {
           method: 'POST',

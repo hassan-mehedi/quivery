@@ -107,23 +107,23 @@
   --tw-prose-td-borders: oklch(0.3 0.02 260);
 }
 
-.prose :where(p):not(:where([class~="not-prose"] *)) {
+.prose :where(p):not(:where([class~='not-prose'] *)) {
   color: var(--tw-prose-body);
 }
 
-.prose :where(h1, h2, h3, h4, h5, h6):not(:where([class~="not-prose"] *)) {
+.prose :where(h1, h2, h3, h4, h5, h6):not(:where([class~='not-prose'] *)) {
   color: var(--tw-prose-headings);
 }
 
-.prose :where(strong):not(:where([class~="not-prose"] *)) {
+.prose :where(strong):not(:where([class~='not-prose'] *)) {
   color: var(--tw-prose-bold);
 }
 
-.prose :where(code):not(:where([class~="not-prose"] *)) {
+.prose :where(code):not(:where([class~='not-prose'] *)) {
   color: var(--tw-prose-code);
 }
 
-.prose :where(blockquote):not(:where([class~="not-prose"] *)) {
+.prose :where(blockquote):not(:where([class~='not-prose'] *)) {
   color: var(--tw-prose-quotes);
   border-left-color: var(--tw-prose-quote-borders);
 }

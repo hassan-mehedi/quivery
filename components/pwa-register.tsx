@@ -1,6 +1,6 @@
-"use client"
+'use client';
 
-import { useEffect } from 'react'
+import { useEffect } from 'react';
 
 export function PWARegister() {
   useEffect(() => {
@@ -11,19 +11,19 @@ export function PWARegister() {
     ) {
       navigator.serviceWorker
         .register('/sw.js')
-        .then((registration) => {
-          console.log('Service Worker registered:', registration.scope)
+        .then(registration => {
+          console.log('Service Worker registered:', registration.scope);
 
           // Check for updates periodically
           setInterval(() => {
-            registration.update()
-          }, 60000) // Check every minute
+            registration.update();
+          }, 60000); // Check every minute
         })
-        .catch((error) => {
-          console.error('Service Worker registration failed:', error)
-        })
+        .catch(error => {
+          console.error('Service Worker registration failed:', error);
+        });
     }
-  }, [])
+  }, []);
 
-  return null
+  return null;
 }

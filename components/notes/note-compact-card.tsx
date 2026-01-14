@@ -15,7 +15,12 @@ interface NoteCompactCardProps {
   onClick: () => void;
 }
 
-export function NoteCompactCard({ note, selected, focused = false, onClick }: NoteCompactCardProps) {
+export function NoteCompactCard({
+  note,
+  selected,
+  focused = false,
+  onClick,
+}: NoteCompactCardProps) {
   const displayedTags = note.tags.slice(0, 2);
   const remainingCount = note.tags.length - 2;
 

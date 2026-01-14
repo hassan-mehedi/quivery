@@ -86,8 +86,7 @@ export const useTodoStore = create<TodoState>(set => ({
     set(state => ({
       selectedTodoIds: new Set([...state.selectedTodoIds, ...ids]),
     })),
-  selectAllVisible: todoIds =>
-    set({ selectedTodoIds: new Set(todoIds) }),
+  selectAllVisible: todoIds => set({ selectedTodoIds: new Set(todoIds) }),
   clearSelection: () => set({ selectedTodoIds: new Set(), isMultiSelectMode: false }),
   bulkUpdateStatus: async (ids, status) => {
     try {
