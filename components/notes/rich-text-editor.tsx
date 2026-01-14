@@ -31,6 +31,29 @@ interface RichTextEditorProps {
   className?: string;
 }
 
+const MenuButton = ({
+  onClick,
+  active,
+  disabled,
+  children,
+}: {
+  onClick: () => void;
+  active?: boolean;
+  disabled?: boolean;
+  children: React.ReactNode;
+}) => (
+  <Button
+    type="button"
+    variant="ghost"
+    size="sm"
+    onClick={onClick}
+    disabled={disabled}
+    className={cn('h-8 w-8 p-0 text-foreground', active && 'bg-accent text-accent-foreground')}
+  >
+    {children}
+  </Button>
+);
+
 export function RichTextEditor({ content, onChange, placeholder, className }: RichTextEditorProps) {
   const editor = useEditor({
     immediatelyRender: false,
@@ -50,7 +73,8 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
     content,
     editorProps: {
       attributes: {
-        class: 'prose prose-sm sm:prose-base prose-invert max-w-none focus:outline-none min-h-[200px] px-4 py-3 text-foreground',
+        class:
+          'prose prose-sm sm:prose-base prose-invert max-w-none focus:outline-none min-h-[200px] px-4 py-3 text-foreground',
       },
     },
     onUpdate: ({ editor }) => {
@@ -61,32 +85,6 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
   if (!editor) {
     return null;
   }
-
-  const MenuButton = ({
-    onClick,
-    active,
-    disabled,
-    children,
-  }: {
-    onClick: () => void;
-    active?: boolean;
-    disabled?: boolean;
-    children: React.ReactNode;
-  }) => (
-    <Button
-      type="button"
-      variant="ghost"
-      size="sm"
-      onClick={onClick}
-      disabled={disabled}
-      className={cn(
-        'h-8 w-8 p-0 text-foreground',
-        active && 'bg-accent text-accent-foreground'
-      )}
-    >
-      {children}
-    </Button>
-  );
 
   return (
     <div className={cn('border-0 bg-transparent', className)}>
@@ -169,10 +167,16 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
 
         <div className="w-px h-8 bg-border mx-1" />
 
-        <MenuButton onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()}>
+        <MenuButton
+          onClick={() => editor.chain().focus().undo().run()}
+          disabled={!editor.can().undo()}
+        >
           <Undo className="h-4 w-4" />
         </MenuButton>
-        <MenuButton onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()}>
+        <MenuButton
+          onClick={() => editor.chain().focus().redo().run()}
+          disabled={!editor.can().redo()}
+        >
           <Redo className="h-4 w-4" />
         </MenuButton>
       </div>

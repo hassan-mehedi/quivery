@@ -1,14 +1,5 @@
-import {
-  startOfDay,
-  endOfDay,
-  addDays,
-  isBefore,
-  isAfter,
-  isSameDay,
-  startOfWeek,
-  endOfWeek,
-} from 'date-fns';
-import { Todo, TodoStatus } from '@prisma/client';
+import { startOfDay, endOfDay, addDays, isBefore, isAfter, isSameDay, endOfWeek } from 'date-fns';
+import { Todo } from '@prisma/client';
 
 export interface TimelineGroup {
   overdue: Todo[];
@@ -29,7 +20,6 @@ export interface TimelineSectionInfo {
 export function groupTodosByTimeline(todos: Todo[]): TimelineGroup {
   const now = new Date();
   const today = startOfDay(now);
-  const todayEnd = endOfDay(now);
   const tomorrow = addDays(today, 1);
   const tomorrowEnd = endOfDay(tomorrow);
   const dayAfterTomorrow = addDays(tomorrow, 1);

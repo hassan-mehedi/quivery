@@ -1,6 +1,6 @@
-const sharp = require('sharp');
-const fs = require('fs');
-const path = require('path');
+import sharp from 'sharp';
+import fs from 'fs';
+import path from 'path';
 
 const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
 const inputImage = path.join(__dirname, '../public/logo.png');

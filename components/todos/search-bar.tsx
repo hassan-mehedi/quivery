@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -31,10 +31,7 @@ export function SearchBar({ value, onChange, onFocus, className }: SearchBarProp
   useEffect(() => {
     const handleSlashKey = (e: KeyboardEvent) => {
       // Focus search when '/' is pressed (unless in an input)
-      if (
-        e.key === '/' &&
-        !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)
-      ) {
+      if (e.key === '/' && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) {
         e.preventDefault();
         inputRef.current?.focus();
       }

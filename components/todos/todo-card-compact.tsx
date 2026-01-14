@@ -12,7 +12,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { StatusBadge } from './status-badge';
 import { PriorityBadge } from './priority-badge';
 import { cn, formatRelativeDate } from '@/lib/utils';
 import { MoreVertical, Pencil, Trash2, Calendar, ChevronDown, ChevronRight } from 'lucide-react';
@@ -133,7 +132,7 @@ const TodoCardCompactComponent = ({
             <Button
               variant="destructive"
               size="sm"
-              onClick={(e) => {
+              onClick={e => {
                 e.stopPropagation();
                 onDelete(todo.id);
               }}
@@ -149,10 +148,11 @@ const TodoCardCompactComponent = ({
           <Checkbox
             checked={isSelected}
             onCheckedChange={() => onSelect(todo.id)}
-            onClick={(e) => e.stopPropagation()}
+            onClick={e => e.stopPropagation()}
             className={cn(
               'shrink-0 transition-all',
-              isSelected && 'data-[state=checked]:bg-neon-cyan data-[state=checked]:border-neon-cyan'
+              isSelected &&
+                'data-[state=checked]:bg-neon-cyan data-[state=checked]:border-neon-cyan'
             )}
           />
         )}
@@ -162,7 +162,7 @@ const TodoCardCompactComponent = ({
           <Checkbox
             checked={isCompleted}
             onCheckedChange={() => onToggle(todo.id)}
-            onClick={(e) => e.stopPropagation()}
+            onClick={e => e.stopPropagation()}
             className={cn(
               'shrink-0 transition-all',
               isCompleted &&

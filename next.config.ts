@@ -1,6 +1,5 @@
 import type { NextConfig } from 'next';
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const withPWAInit = require('next-pwa');
+import withPWAInit from 'next-pwa';
 
 const withPWA = withPWAInit({
   dest: 'public',

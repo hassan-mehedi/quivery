@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { Todo, TodoStatus, Priority, Tag } from '@prisma/client';
+import { useState, useEffect } from 'react';
+import { Todo, TodoStatus, Priority } from '@prisma/client';
 import { parseNaturalLanguage } from '@/lib/natural-language-parser';
 import {
   Dialog,

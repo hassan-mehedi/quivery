@@ -73,10 +73,9 @@ const TodoCardComponent = ({
     }
   };
 
-  useEffect(() => {
-    setTitleValue(todo.title);
-    setDescriptionValue(todo.description || '');
-  }, [todo.title, todo.description]);
+  // Sync local state with todo prop changes
+  if (titleValue !== todo.title) setTitleValue(todo.title);
+  if (descriptionValue !== (todo.description || '')) setDescriptionValue(todo.description || '');
 
   useEffect(() => {
     if (isEditingTitle && titleInputRef.current) {
@@ -147,10 +146,11 @@ const TodoCardComponent = ({
             <Checkbox
               checked={isSelected}
               onCheckedChange={() => onSelect(todo.id)}
-              onClick={(e) => e.stopPropagation()}
+              onClick={e => e.stopPropagation()}
               className={cn(
                 'mt-1 transition-all',
-                isSelected && 'data-[state=checked]:bg-neon-cyan data-[state=checked]:border-neon-cyan'
+                isSelected &&
+                  'data-[state=checked]:bg-neon-cyan data-[state=checked]:border-neon-cyan'
               )}
             />
           )}
@@ -160,7 +160,7 @@ const TodoCardComponent = ({
             <Checkbox
               checked={isCompleted}
               onCheckedChange={() => onToggle(todo.id)}
-              onClick={(e) => e.stopPropagation()}
+              onClick={e => e.stopPropagation()}
               className={cn(
                 'mt-1 transition-all',
                 isCompleted &&

@@ -8,13 +8,11 @@ export function OfflineIndicator() {
   const [isOffline, setIsOffline] = useState(false);
 
   useEffect(() => {
+    // Check initial online status after mount
+    setIsOffline(!navigator.onLine);
+
     const handleOnline = () => setIsOffline(false);
     const handleOffline = () => setIsOffline(true);
-
-    // Check initial state on mount
-    if (!navigator.onLine) {
-      setIsOffline(true);
-    }
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);

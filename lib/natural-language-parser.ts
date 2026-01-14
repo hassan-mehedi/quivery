@@ -1,5 +1,5 @@
 import { Priority } from '@prisma/client';
-import { addDays, addWeeks, parse, isValid, startOfDay } from 'date-fns';
+import { addDays, addWeeks, startOfDay } from 'date-fns';
 
 export interface ParsedTodo {
   title: string;
@@ -82,8 +82,14 @@ function parseDueDate(text: string): DateMatch | null {
     { pattern: /\btoday\b/i, date: today },
     { pattern: /\btomorrow\b/i, date: addDays(today, 1) },
     { pattern: /\bnext week\b/i, date: addWeeks(today, 1) },
-    { pattern: /\bin (\d+) days?\b/i, getDays: (match: RegExpMatchArray) => addDays(today, parseInt(match[1])) },
-    { pattern: /\bin (\d+) weeks?\b/i, getDays: (match: RegExpMatchArray) => addWeeks(today, parseInt(match[1])) },
+    {
+      pattern: /\bin (\d+) days?\b/i,
+      getDays: (match: RegExpMatchArray) => addDays(today, parseInt(match[1])),
+    },
+    {
+      pattern: /\bin (\d+) weeks?\b/i,
+      getDays: (match: RegExpMatchArray) => addWeeks(today, parseInt(match[1])),
+    },
   ];
 
   for (const { pattern, date, getDays } of relativePatterns) {
@@ -97,7 +103,9 @@ function parseDueDate(text: string): DateMatch | null {
   }
 
   // Day of week (e.g., Monday, Tuesday)
-  const dayOfWeekMatch = text.match(/\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i);
+  const dayOfWeekMatch = text.match(
+    /\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i
+  );
   if (dayOfWeekMatch) {
     const targetDay = dayOfWeekMatch[1].toLowerCase();
     const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -146,8 +154,18 @@ function parseDueDate(text: string): DateMatch | null {
       if (pattern.source.includes('jan')) {
         // Month name format
         const monthMap: Record<string, number> = {
-          jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
-          jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11,
+          jan: 0,
+          feb: 1,
+          mar: 2,
+          apr: 3,
+          may: 4,
+          jun: 5,
+          jul: 6,
+          aug: 7,
+          sep: 8,
+          oct: 9,
+          nov: 10,
+          dec: 11,
         };
         month = monthMap[match[1].toLowerCase().substring(0, 3)];
         day = parseInt(match[2]);

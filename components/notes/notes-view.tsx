@@ -15,7 +15,6 @@ import { NotesGrid } from './notes-grid';
 import { useNotes } from '@/hooks/use-notes';
 import { useNoteStore } from '@/stores/note-store';
 import { useUIStore } from '@/stores/ui-store';
-import { cn } from '@/lib/utils';
 
 export function NotesView() {
   const { isMobile } = useUIStore();
@@ -42,42 +41,53 @@ export function NotesView() {
   const [localSearch, setLocalSearch] = useState(searchQuery);
   const [localTagIds, setLocalTagIds] = useState<string[]>(selectedTagIds);
   const [focusedNoteId, setFocusedNoteId] = useState<string | null>(null);
-  const [showShortcutsHint, setShowShortcutsHint] = useState(false);
+  const [showShortcutsHint, setShowShortcutsHint] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return !localStorage.getItem('notes-shortcuts-hint-seen');
+    }
+    return false;
+  });
 
   useEffect(() => {
     fetchNotes();
     fetchTags();
-  }, []);
+  }, [fetchNotes, fetchTags]);
 
   useEffect(() => {
     fetchNotes(localSearch, localTagIds.length > 0 ? localTagIds : undefined);
-  }, [localSearch, localTagIds]);
+  }, [localSearch, localTagIds, fetchNotes]);
 
-  const handleCreateNote = async () => {
-    const newNote = await createNote('Untitled Note', '');
+  const handleCreateNote = useCallback(async () => {
+    await createNote('Untitled Note', '');
     if (isMobile) {
       setShowEditor(true);
     }
-  };
+  }, [createNote, isMobile]);
 
-  const handleSelectNote = (note: typeof notes[0]) => {
-    selectNote(note);
-    if (isMobile) {
-      setShowEditor(true);
-    }
-  };
+  const handleSelectNote = useCallback(
+    (note: (typeof notes)[0]) => {
+      selectNote(note);
+      if (isMobile) {
+        setShowEditor(true);
+      }
+    },
+    [selectNote, isMobile]
+  );
 
   const handleBack = () => {
     setShowEditor(false);
   };
 
-  const handleDeleteNote = async (id: string) => {
-    await removeNote(id);
-    selectNote(null);
-    if (isMobile) {
-      setShowEditor(false);
-    }
-  };
+  const handleDeleteNote = useCallback(
+    async (id: string) => {
+      await removeNote(id);
+      selectNote(null);
+      if (isMobile) {
+        setShowEditor(false);
+      }
+    },
+    [removeNote, selectNote, isMobile]
+  );
 
   const handleToggleTag = (tagId: string) => {
     const newTagIds = localTagIds.includes(tagId)
@@ -132,7 +142,9 @@ export function NotesView() {
       // Focus search - /
       if (e.key === '/') {
         e.preventDefault();
-        const searchInput = document.querySelector('input[placeholder*="Search notes"]') as HTMLInputElement;
+        const searchInput = document.querySelector(
+          'input[placeholder*="Search notes"]'
+        ) as HTMLInputElement;
         if (searchInput) {
           searchInput.focus();
           searchInput.select();
@@ -214,7 +226,18 @@ export function NotesView() {
         return;
       }
     },
-    [notes, focusedNoteId, isMobile, selectedNote, handleCreateNote, handleSelectNote, handleDeleteNote, createNote, selectNote, setViewMode]
+    [
+      notes,
+      focusedNoteId,
+      isMobile,
+      selectedNote,
+      handleCreateNote,
+      handleSelectNote,
+      handleDeleteNote,
+      createNote,
+      selectNote,
+      setViewMode,
+    ]
   );
 
   useEffect(() => {
@@ -224,15 +247,14 @@ export function NotesView() {
 
   // Show shortcuts hint on first visit
   useEffect(() => {
-    const hasSeenHint = localStorage.getItem('notes-shortcuts-hint-seen');
-    if (!hasSeenHint) {
-      setShowShortcutsHint(true);
-      setTimeout(() => {
+    if (showShortcutsHint) {
+      const timer = setTimeout(() => {
         setShowShortcutsHint(false);
         localStorage.setItem('notes-shortcuts-hint-seen', 'true');
       }, 5000);
+      return () => clearTimeout(timer);
     }
-  }, []);
+  }, [showShortcutsHint]);
 
   const hasFilters = localSearch || localTagIds.length > 0;
   const showEmptyState = !isLoading && notes.length === 0;
@@ -313,7 +335,12 @@ export function NotesView() {
               onCreateTag={createTag}
             />
             {hasFilters && (
-              <Button variant="ghost" size="sm" onClick={handleClearFilters} className="text-foreground">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearFilters}
+                className="text-foreground"
+              >
                 <X className="h-4 w-4 mr-1" />
                 Clear
               </Button>
@@ -414,19 +441,29 @@ export function NotesView() {
           <div className="space-y-4">
             {/* Navigation */}
             <div>
-              <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Navigation</h4>
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">
+                Navigation
+              </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                 <div>
-                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">↑↓</kbd>
-                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">J/K</kbd>
+                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">
+                    ↑↓
+                  </kbd>
+                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">
+                    J/K
+                  </kbd>
                   <span className="text-muted-foreground">Navigate notes</span>
                 </div>
                 <div>
-                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">/</kbd>
+                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">
+                    /
+                  </kbd>
                   <span className="text-muted-foreground">Focus search</span>
                 </div>
                 <div>
-                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">Esc</kbd>
+                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">
+                    Esc
+                  </kbd>
                   <span className="text-muted-foreground">Clear selection/close</span>
                 </div>
               </div>
@@ -434,23 +471,35 @@ export function NotesView() {
 
             {/* Actions */}
             <div>
-              <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Actions</h4>
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">
+                Actions
+              </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                 <div>
-                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">N</kbd>
-                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">C</kbd>
+                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">
+                    N
+                  </kbd>
+                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">
+                    C
+                  </kbd>
                   <span className="text-muted-foreground">Create new note</span>
                 </div>
                 <div>
-                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">Enter</kbd>
+                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">
+                    Enter
+                  </kbd>
                   <span className="text-muted-foreground">Open note</span>
                 </div>
                 <div>
-                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">Del</kbd>
+                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">
+                    Del
+                  </kbd>
                   <span className="text-muted-foreground">Delete note</span>
                 </div>
                 <div>
-                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">Cmd/Ctrl+D</kbd>
+                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">
+                    Cmd/Ctrl+D
+                  </kbd>
                   <span className="text-muted-foreground">Duplicate note</span>
                 </div>
               </div>
@@ -458,18 +507,26 @@ export function NotesView() {
 
             {/* View Modes */}
             <div>
-              <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">View Modes</h4>
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">
+                View Modes
+              </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                 <div>
-                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">G</kbd>
+                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">
+                    G
+                  </kbd>
                   <span className="text-muted-foreground">Grid view</span>
                 </div>
                 <div>
-                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">L</kbd>
+                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">
+                    L
+                  </kbd>
                   <span className="text-muted-foreground">List view</span>
                 </div>
                 <div>
-                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">T</kbd>
+                  <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-xs mr-2 text-foreground">
+                    T
+                  </kbd>
                   <span className="text-muted-foreground">Compact view</span>
                 </div>
               </div>
@@ -493,7 +550,13 @@ export function NotesView() {
       <div className="flex-1 overflow-auto">
         <div className="max-w-[1600px] mx-auto px-6 py-6">
           {isLoading ? (
-            <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4' : 'flex flex-col gap-3 max-w-2xl mx-auto'}>
+            <div
+              className={
+                viewMode === 'grid'
+                  ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4'
+                  : 'flex flex-col gap-3 max-w-2xl mx-auto'
+              }
+            >
               {[...Array(8)].map((_, i) => (
                 <Skeleton key={i} className={viewMode === 'grid' ? 'h-[200px]' : 'h-24'} />
               ))}

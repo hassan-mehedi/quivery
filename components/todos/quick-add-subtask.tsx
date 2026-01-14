@@ -4,7 +4,6 @@ import { useState, useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Plus, X } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 interface QuickAddSubtaskProps {
   onSubmit: (title: string) => Promise<void>;

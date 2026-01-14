@@ -67,7 +67,10 @@ export async function POST(request: Request) {
 
       case 'update':
         if (!updates) {
-          return NextResponse.json({ error: 'Updates are required for update action' }, { status: 400 });
+          return NextResponse.json(
+            { error: 'Updates are required for update action' },
+            { status: 400 }
+          );
         }
 
         const updateData: {
@@ -79,7 +82,7 @@ export async function POST(request: Request) {
         if (updates.status !== undefined) {
           updateData.status = updates.status as TodoStatus;
           if (updates.status === 'COMPLETED') {
-            (updateData as any).completedAt = new Date();
+            (updateData as Record<string, unknown>).completedAt = new Date();
           }
         }
         if (updates.priority !== undefined) {
@@ -97,7 +100,10 @@ export async function POST(request: Request) {
 
       case 'addTags':
         if (!updates?.tagIds || !Array.isArray(updates.tagIds)) {
-          return NextResponse.json({ error: 'Tag IDs are required for addTags action' }, { status: 400 });
+          return NextResponse.json(
+            { error: 'Tag IDs are required for addTags action' },
+            { status: 400 }
+          );
         }
 
         // Create TodoTag entries for each todo-tag combination

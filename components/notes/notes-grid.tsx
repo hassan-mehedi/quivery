@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -12,7 +12,12 @@ import {
   DragOverlay,
   DragStartEvent,
 } from '@dnd-kit/core';
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy } from '@dnd-kit/sortable';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+} from '@dnd-kit/sortable';
 import { Note, Tag } from '@prisma/client';
 import { DraggableNoteCard } from './draggable-note-card';
 import { NoteGridCard } from './note-grid-card';
@@ -44,11 +49,9 @@ export function NotesGrid({
   const [localNotes, setLocalNotes] = useState<NoteWithTags[]>(notes);
 
   // Update local notes when props change (but not during drag)
-  useEffect(() => {
-    if (!activeId) {
-      setLocalNotes(notes);
-    }
-  }, [notes, activeId]);
+  if (!activeId && localNotes !== notes) {
+    setLocalNotes(notes);
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -79,7 +82,7 @@ export function NotesGrid({
       if (onReorder) {
         try {
           await onReorder(reordered);
-        } catch (error) {
+        } catch {
           // Rollback on error
           setLocalNotes(notes);
         }

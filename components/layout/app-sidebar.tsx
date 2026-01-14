@@ -1,6 +1,5 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import { CheckSquare, FileText, LogOut, Settings, ChevronLeft, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';

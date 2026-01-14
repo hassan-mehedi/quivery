@@ -49,7 +49,7 @@ export function TagSelector({
       setNewTagName('');
       setSelectedColor(PRESET_COLORS[7]);
       setIsCreating(false);
-    } catch (error) {
+    } catch {
       // Error is handled by the hook
     }
   };

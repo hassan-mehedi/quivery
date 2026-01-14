@@ -2,11 +2,6 @@ import { useState, useCallback, useRef } from 'react';
 import { useNoteStore } from '@/stores/note-store';
 import { toast } from 'sonner';
 import { debounce } from '@/lib/utils';
-import { Note, Tag } from '@prisma/client';
-
-type NoteWithTags = Note & {
-  tags: { tag: Tag }[];
-};
 
 export function useNotes() {
   const {
@@ -117,25 +112,28 @@ export function useNotes() {
 
   // Debounced save function for auto-save (saves 3.5 seconds after user stops typing)
   const debouncedSaveRef = useRef(
-    debounce(async (id: string, updates: { title?: string; content?: string; tagIds?: string[] }) => {
-      try {
-        const response = await fetch(`/api/notes/${id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updates),
-        });
+    debounce(
+      async (id: string, updates: { title?: string; content?: string; tagIds?: string[] }) => {
+        try {
+          const response = await fetch(`/api/notes/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updates),
+          });
 
-        if (!response.ok) throw new Error('Failed to auto-save note');
+          if (!response.ok) throw new Error('Failed to auto-save note');
 
-        const updatedNote = await response.json();
-        updateNote(id, updatedNote);
-        setSaveStatus('saved');
-        setTimeout(() => setSaveStatus('idle'), 2000);
-      } catch (error) {
-        console.error('Error auto-saving note:', error);
-        setSaveStatus('idle');
-      }
-    }, 3500)
+          const updatedNote = await response.json();
+          updateNote(id, updatedNote);
+          setSaveStatus('saved');
+          setTimeout(() => setSaveStatus('idle'), 2000);
+        } catch (error) {
+          console.error('Error auto-saving note:', error);
+          setSaveStatus('idle');
+        }
+      },
+      3500
+    )
   );
 
   const debouncedSave = useCallback(
@@ -213,26 +211,23 @@ export function useNotes() {
     [deleteTag]
   );
 
-  const updateNotesOrder = useCallback(
-    async (updates: { id: string; order: number }[]) => {
-      try {
-        const response = await fetch('/api/notes/order', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ updates }),
-        });
+  const updateNotesOrder = useCallback(async (updates: { id: string; order: number }[]) => {
+    try {
+      const response = await fetch('/api/notes/order', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ updates }),
+      });
 
-        if (!response.ok) throw new Error('Failed to update note order');
+      if (!response.ok) throw new Error('Failed to update note order');
 
-        return await response.json();
-      } catch (error) {
-        console.error('Error updating note order:', error);
-        toast.error('Failed to reorder notes');
-        throw error;
-      }
-    },
-    []
-  );
+      return await response.json();
+    } catch (error) {
+      console.error('Error updating note order:', error);
+      toast.error('Failed to reorder notes');
+      throw error;
+    }
+  }, []);
 
   return {
     notes,

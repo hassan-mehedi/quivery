@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Note, Tag } from '@prisma/client';
 import { ArrowLeft, Trash2, Check, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -44,18 +44,21 @@ export function NoteEditor({
   onDelete,
   onCreateTag,
   onBack,
-  isMobile,
 }: NoteEditorProps) {
   const [title, setTitle] = useState(note.title);
   const [content, setContent] = useState(note.content);
-  const [selectedTagIds, setSelectedTagIds] = useState<string[]>(note.tags.map(({ tag }) => tag.id));
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>(
+    note.tags.map(({ tag }) => tag.id)
+  );
   const [isDeleting, setIsDeleting] = useState(false);
 
-  useEffect(() => {
-    setTitle(note.title);
-    setContent(note.content);
-    setSelectedTagIds(note.tags.map(({ tag }) => tag.id));
-  }, [note]);
+  // Update local state when note changes
+  if (title !== note.title) setTitle(note.title);
+  if (content !== note.content) setContent(note.content);
+  const noteTagIds = note.tags.map(({ tag }) => tag.id);
+  if (JSON.stringify(selectedTagIds) !== JSON.stringify(noteTagIds)) {
+    setSelectedTagIds(noteTagIds);
+  }
 
   const handleTitleChange = (newTitle: string) => {
     setTitle(newTitle);
@@ -86,7 +89,7 @@ export function NoteEditor({
     setIsDeleting(true);
     try {
       await onDelete(note.id);
-    } catch (error) {
+    } catch {
       setIsDeleting(false);
     }
   };
@@ -105,7 +108,7 @@ export function NoteEditor({
             </Button>
           )}
 
-          <div className={cn("flex items-center gap-2", onBack && "ml-auto")}>
+          <div className={cn('flex items-center gap-2', onBack && 'ml-auto')}>
             {/* Save Status */}
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               {saveStatus === 'saving' && (

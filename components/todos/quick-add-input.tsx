@@ -5,9 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Plus, X, Calendar, AlertCircle, Folder, Hash } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { parseNaturalLanguage, formatParsedPreview } from '@/lib/natural-language-parser';
-import { Priority, TodoStatus } from '@prisma/client';
+import { parseNaturalLanguage } from '@/lib/natural-language-parser';
+import { Priority } from '@prisma/client';
 import { useProjects } from '@/hooks/use-projects';
 
 interface QuickAddInputProps {
@@ -44,9 +43,7 @@ export function QuickAddInput({ onSubmit, onCancel, isVisible }: QuickAddInputPr
   // Find project by name
   const matchedProject = useMemo(() => {
     if (!parsed?.projectName) return null;
-    return projects.find(
-      p => p.name.toLowerCase() === parsed.projectName?.toLowerCase()
-    );
+    return projects.find(p => p.name.toLowerCase() === parsed.projectName?.toLowerCase());
   }, [parsed?.projectName, projects]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -82,7 +79,7 @@ export function QuickAddInput({ onSubmit, onCancel, isVisible }: QuickAddInputPr
       // Cmd/Ctrl+Enter to submit without parsing
       e.preventDefault();
       setUseNLP(false);
-      handleSubmit(e as any);
+      handleSubmit(e as React.FormEvent<HTMLFormElement>);
       setUseNLP(true);
     }
   };
@@ -153,7 +150,8 @@ export function QuickAddInput({ onSubmit, onCancel, isVisible }: QuickAddInputPr
                 </span>
               )}
               {matchedProject && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded"
+                <span
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded"
                   style={{
                     backgroundColor: `${matchedProject.color}10`,
                     color: matchedProject.color,
@@ -165,16 +163,19 @@ export function QuickAddInput({ onSubmit, onCancel, isVisible }: QuickAddInputPr
               )}
               {parsed.projectName && !matchedProject && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-muted text-muted-foreground rounded">
-                  <Folder className="w-3 h-3" />
-                  @{parsed.projectName} (not found)
+                  <Folder className="w-3 h-3" />@{parsed.projectName} (not found)
                 </span>
               )}
-              {parsed.tags && parsed.tags.map(tag => (
-                <span key={tag} className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-500/10 text-purple-400 rounded">
-                  <Hash className="w-3 h-3" />
-                  {tag}
-                </span>
-              ))}
+              {parsed.tags &&
+                parsed.tags.map(tag => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-500/10 text-purple-400 rounded"
+                  >
+                    <Hash className="w-3 h-3" />
+                    {tag}
+                  </span>
+                ))}
             </div>
           </div>
         )}

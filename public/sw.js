@@ -1,5 +1,4 @@
 // Service Worker for NeonTask PWA
-const CACHE_NAME = 'neontask-v1';
 const STATIC_CACHE = 'neontask-static-v1';
 const DYNAMIC_CACHE = 'neontask-dynamic-v1';
 

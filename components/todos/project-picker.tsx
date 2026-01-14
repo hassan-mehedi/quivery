@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from 'react';
 import { useProjects } from '@/hooks/use-projects';
-import { ProjectBadge } from './project-badge';
 import {
   Dialog,
   DialogContent,

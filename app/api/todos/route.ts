@@ -20,7 +20,7 @@ export async function GET(request: Request) {
     const includeParam = searchParams.get('include'); // e.g., "project,tags,subtasks"
     const parentIdParam = searchParams.get('parentId'); // null to get only top-level todos
 
-    const where: any = {
+    const where: Record<string, unknown> = {
       userId: session.user.id,
     };
 
@@ -49,7 +49,7 @@ export async function GET(request: Request) {
     }
 
     // Build include object based on query param
-    const include: any = {};
+    const include: Record<string, unknown> = {};
     if (includeParam) {
       const includes = includeParam.split(',');
       if (includes.includes('project')) {
@@ -71,7 +71,12 @@ export async function GET(request: Request) {
 
     const todos = await prisma.todo.findMany({
       where,
-      orderBy: [{ sortOrder: 'asc' }, { status: 'asc' }, { priority: 'desc' }, { createdAt: 'desc' }],
+      orderBy: [
+        { sortOrder: 'asc' },
+        { status: 'asc' },
+        { priority: 'desc' },
+        { createdAt: 'desc' },
+      ],
       include: Object.keys(include).length > 0 ? include : undefined,
     });
 

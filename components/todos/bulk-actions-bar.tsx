@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Priority, TodoStatus } from '@prisma/client';
+import { Priority } from '@prisma/client';
 import { useTodoStore } from '@/stores/todo-store';
 import { useProjects } from '@/hooks/use-projects';
 import { useTags } from '@/hooks/use-tags';
@@ -15,13 +15,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -33,7 +26,6 @@ import {
 } from '@/components/ui/alert-dialog';
 import { CheckCircle2, FolderOpen, Tag, Trash2, X, Loader2, Flag } from 'lucide-react';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
 
 export function BulkActionsBar() {
   const selectedTodoIds = useTodoStore(state => state.selectedTodoIds);
@@ -61,7 +53,7 @@ export function BulkActionsBar() {
       await bulkUpdateStatus(selectedIds, 'COMPLETED');
       toast.success(`${selectedCount} todo(s) marked as complete`);
       clearSelection();
-    } catch (error) {
+    } catch {
       toast.error('Failed to complete todos');
     } finally {
       setIsLoading(false);
@@ -74,7 +66,7 @@ export function BulkActionsBar() {
       await bulkUpdateStatus(selectedIds, 'PENDING');
       toast.success(`${selectedCount} todo(s) marked as pending`);
       clearSelection();
-    } catch (error) {
+    } catch {
       toast.error('Failed to update todos');
     } finally {
       setIsLoading(false);
@@ -88,7 +80,7 @@ export function BulkActionsBar() {
       toast.success(`${selectedCount} todo(s) deleted`);
       setShowDeleteDialog(false);
       clearSelection();
-    } catch (error) {
+    } catch {
       toast.error('Failed to delete todos');
     } finally {
       setIsLoading(false);
@@ -104,7 +96,7 @@ export function BulkActionsBar() {
         `${selectedCount} todo(s) ${projectId === 'none' ? 'removed from project' : `assigned to ${project?.name}`}`
       );
       clearSelection();
-    } catch (error) {
+    } catch {
       toast.error('Failed to assign project');
     } finally {
       setIsLoading(false);
@@ -118,7 +110,7 @@ export function BulkActionsBar() {
       const tag = tags.find(t => t.id === tagId);
       toast.success(`Tag "${tag?.name}" added to ${selectedCount} todo(s)`);
       clearSelection();
-    } catch (error) {
+    } catch {
       toast.error('Failed to add tags');
     } finally {
       setIsLoading(false);
@@ -131,7 +123,7 @@ export function BulkActionsBar() {
       await bulkSetPriority(selectedIds, priority);
       toast.success(`${selectedCount} todo(s) updated to ${priority} priority`);
       clearSelection();
-    } catch (error) {
+    } catch {
       toast.error('Failed to update priority');
     } finally {
       setIsLoading(false);
@@ -166,12 +158,8 @@ export function BulkActionsBar() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  <DropdownMenuItem onClick={handleComplete}>
-                    Mark as Complete
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleUncomplete}>
-                    Mark as Pending
-                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleComplete}>Mark as Complete</DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleUncomplete}>Mark as Pending</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 
@@ -224,7 +212,10 @@ export function BulkActionsBar() {
                     <span className="text-muted-foreground">No Project</span>
                   </DropdownMenuItem>
                   {projects.map(project => (
-                    <DropdownMenuItem key={project.id} onClick={() => handleAssignProject(project.id)}>
+                    <DropdownMenuItem
+                      key={project.id}
+                      onClick={() => handleAssignProject(project.id)}
+                    >
                       <div className="flex items-center gap-2">
                         <div
                           className="w-3 h-3 rounded-full"
@@ -256,7 +247,10 @@ export function BulkActionsBar() {
                   {tags.map(tag => (
                     <DropdownMenuItem key={tag.id} onClick={() => handleAddTags(tag.id)}>
                       <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: tag.color }} />
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: tag.color }}
+                        />
                         <span>#{tag.name}</span>
                       </div>
                     </DropdownMenuItem>

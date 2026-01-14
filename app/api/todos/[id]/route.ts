@@ -54,10 +54,20 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       return NextResponse.json({ error: 'Todo not found' }, { status: 404 });
     }
 
-    const { title, description, status, priority, dueDate, projectId, tagIds, parentId, sortOrder } = body;
+    const {
+      title,
+      description,
+      status,
+      priority,
+      dueDate,
+      projectId,
+      tagIds,
+      parentId,
+      sortOrder,
+    } = body;
 
     // Update the todo
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       ...(title !== undefined && { title: title.trim() }),
       ...(description !== undefined && { description: description?.trim() || null }),
       ...(status !== undefined && { status }),

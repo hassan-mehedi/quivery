@@ -6,7 +6,6 @@ import { SubtaskItem } from './subtask-item';
 import { QuickAddSubtask } from './quick-add-subtask';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 interface SubtaskListProps {
   subtasks: Todo[];

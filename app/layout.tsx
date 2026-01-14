@@ -10,29 +10,32 @@ const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: {
-    default: 'NeonTask - TODO & Notes',
-    template: '%s | NeonTask',
+    default: 'Quivery - All Your Utilities in One Place',
+    template: '%s | Quivery',
   },
-  description: 'A modern TODO and Notes application with neon aesthetics',
+  description:
+    'A comprehensive web app that brings all your essential utilities together in one place',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'NeonTask',
+    title: 'Quivery',
   },
   formatDetection: {
     telephone: false,
   },
   openGraph: {
     type: 'website',
-    siteName: 'NeonTask',
-    title: 'NeonTask - TODO & Notes',
-    description: 'A modern TODO and Notes application with neon aesthetics',
+    siteName: 'Quivery',
+    title: 'Quivery - All Your Utilities in One Place',
+    description:
+      'A comprehensive web app that brings all your essential utilities together in one place',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'NeonTask - TODO & Notes',
-    description: 'A modern TODO and Notes application with neon aesthetics',
+    title: 'Quivery - All Your Utilities in One Place',
+    description:
+      'A comprehensive web app that brings all your essential utilities together in one place',
   },
 };
 
