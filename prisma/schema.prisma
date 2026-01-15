@@ -51,6 +51,14 @@ model Todo {
   @@index([priority])
   @@index([parentId])
   @@index([projectId])
+  // Composite indexes for common query patterns (performance optimization)
+  @@index([userId, status])
+  @@index([userId, priority])
+  @@index([userId, status, priority])
+  @@index([userId, dueDate])
+  @@index([userId, projectId])
+  @@index([userId, title])
+  @@index([userId, sortOrder])
 }
 
 model Note {
@@ -67,6 +75,9 @@ model Note {
   tags        NoteTag[]
 
   @@index([userId])
+  // Composite indexes for common query patterns (performance optimization)
+  @@index([userId, sortOrder])
+  @@index([userId, title])
 }
 
 model Tag {

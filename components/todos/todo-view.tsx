@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import { Todo, Priority } from '@prisma/client';
 import { useTodos } from '@/hooks/use-todos';
 import { useTodoStore } from '@/stores/todo-store';
@@ -17,16 +18,23 @@ import {
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { TodoCard } from './todo-card';
 import { DraggableTodoCard } from './draggable-todo-card';
-import { TodoDialog } from './todo-dialog';
 import { TodoFilters } from './todo-filters';
 import { QuickAddInput } from './quick-add-input';
 import { SearchBar } from './search-bar';
-import { GroupedTimelineView } from './grouped-timeline-view';
 import { BulkActionsBar } from './bulk-actions-bar';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Plus, CheckSquare, Loader2, Keyboard, List, Calendar, CheckCheck } from 'lucide-react';
+
+// Lazy load heavy components
+const TodoDialog = dynamic(() => import('./todo-dialog').then((mod) => ({ default: mod.TodoDialog })), {
+  loading: () => null,
+});
+
+const GroupedTimelineView = dynamic(() => import('./grouped-timeline-view').then((mod) => ({ default: mod.GroupedTimelineView })), {
+  loading: () => <div className="flex items-center justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>,
+});
 import {
   AlertDialog,
   AlertDialogAction,
@@ -118,7 +126,7 @@ export function TodoView() {
 
   const handleToggle = useCallback(
     async (id: string) => {
-      const todo = todos.find(t => t.id === id);
+      const todo = todos.find((t: Todo) => t.id === id);
       if (todo) {
         await toggleStatus(id, todo.status);
       }
@@ -179,8 +187,8 @@ export function TodoView() {
 
     if (!over || active.id === over.id) return;
 
-    const oldIndex = todos.findIndex(t => t.id === active.id);
-    const newIndex = todos.findIndex(t => t.id === over.id);
+    const oldIndex = todos.findIndex((t: Todo) => t.id === active.id);
+    const newIndex = todos.findIndex((t: Todo) => t.id === over.id);
 
     if (oldIndex === -1 || newIndex === -1) return;
 
@@ -197,7 +205,7 @@ export function TodoView() {
     });
   };
 
-  const activeTodo = todos.find(t => t.id === activeTodoId);
+  const activeTodo = todos.find((t: Todo) => t.id === activeTodoId);
 
   // Keyboard navigation
   const handleKeyDown = useCallback(
@@ -224,7 +232,7 @@ export function TodoView() {
       // Select all visible todos
       if ((e.metaKey || e.ctrlKey) && e.key === 'a') {
         e.preventDefault();
-        const visibleTodoIds = todos.map(t => t.id);
+        const visibleTodoIds = todos.map((t: Todo) => t.id);
         selectAllVisible(visibleTodoIds);
         return;
       }
@@ -257,7 +265,7 @@ export function TodoView() {
       // Navigation and actions on focused todo
       if (todos.length === 0) return;
 
-      const currentIndex = focusedTodoId ? todos.findIndex(t => t.id === focusedTodoId) : -1;
+      const currentIndex = focusedTodoId ? todos.findIndex((t: Todo) => t.id === focusedTodoId) : -1;
 
       // Arrow down - navigate to next todo
       if (e.key === 'ArrowDown') {
@@ -285,7 +293,7 @@ export function TodoView() {
       // Enter - open edit dialog
       if (e.key === 'Enter' && focusedTodoId) {
         e.preventDefault();
-        const todo = todos.find(t => t.id === focusedTodoId);
+        const todo = todos.find((t: Todo) => t.id === focusedTodoId);
         if (todo) handleEdit(todo);
         return;
       }
@@ -317,7 +325,7 @@ export function TodoView() {
       // Duplicate todo - Cmd/Ctrl+D
       if ((e.metaKey || e.ctrlKey) && e.key === 'd' && focusedTodoId) {
         e.preventDefault();
-        const todo = todos.find(t => t.id === focusedTodoId);
+        const todo = todos.find((t: Todo) => t.id === focusedTodoId);
         if (todo) {
           createTodo({
             title: `${todo.title} (copy)`,
@@ -376,16 +384,15 @@ export function TodoView() {
     localStorage.setItem('todo-view-mode', viewMode);
   }, [viewMode]);
 
-  const completedCount = todos.filter(t => t.status === 'COMPLETED').length;
+  const completedCount = todos.filter((t: Todo) => t.status === 'COMPLETED').length;
   const totalCount = todos.length;
 
   return (
-    <div className="space-y-6" ref={viewRef}>
+    <div className="space-y-6 px-6 py-6" ref={viewRef}>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <CheckSquare className="w-6 h-6 text-neon-cyan" />
+          <h1 className="text-2xl font-bold text-foreground">
             TODOs
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
@@ -629,9 +636,9 @@ export function TodoView() {
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
-          <SortableContext items={todos.map(t => t.id)} strategy={verticalListSortingStrategy}>
+          <SortableContext items={todos.map((t: Todo) => t.id)} strategy={verticalListSortingStrategy}>
             <div className="space-y-2">
-              {todos.map(todo => (
+              {todos.map((todo: Todo) => (
                 <DraggableTodoCard
                   key={todo.id}
                   todo={todo}

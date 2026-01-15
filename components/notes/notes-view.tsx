@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { Note, Tag } from '@prisma/client';
 import { Search, Plus, X, StickyNote, Keyboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,8 +17,12 @@ import { useNotes } from '@/hooks/use-notes';
 import { useNoteStore } from '@/stores/note-store';
 import { useUIStore } from '@/stores/ui-store';
 
+type NoteWithTags = Note & {
+  tags: { tag: Tag }[];
+};
+
 export function NotesView() {
-  const { isMobile } = useUIStore();
+  const isMobile = useUIStore(state => state.isMobile);
   const {
     notes,
     tags,
@@ -36,7 +41,11 @@ export function NotesView() {
     selectNote,
   } = useNotes();
 
-  const { viewMode, setViewMode, setSearchQuery, setSelectedTagIds } = useNoteStore();
+  // Use individual selectors to prevent unnecessary re-renders
+  const viewMode = useNoteStore(state => state.viewMode);
+  const setViewMode = useNoteStore(state => state.setViewMode);
+  const setSearchQuery = useNoteStore(state => state.setSearchQuery);
+  const setSelectedTagIds = useNoteStore(state => state.setSelectedTagIds);
   const [showEditor, setShowEditor] = useState(false);
   const [localSearch, setLocalSearch] = useState(searchQuery);
   const [localTagIds, setLocalTagIds] = useState<string[]>(selectedTagIds);
@@ -104,7 +113,7 @@ export function NotesView() {
     setSelectedTagIds([]);
   };
 
-  const handleReorder = async (reorderedNotes: typeof notes) => {
+  const handleReorder = async (reorderedNotes: NoteWithTags[]) => {
     const updates = reorderedNotes.map((note, index) => ({
       id: note.id,
       order: index,
@@ -182,7 +191,7 @@ export function NotesView() {
       // Navigation and actions on focused note
       if (notes.length === 0) return;
 
-      const currentIndex = focusedNoteId ? notes.findIndex(n => n.id === focusedNoteId) : -1;
+      const currentIndex = focusedNoteId ? notes.findIndex((n: NoteWithTags) => n.id === focusedNoteId) : -1;
 
       // Arrow down - navigate to next note
       if (e.key === 'ArrowDown' || e.key === 'j' || e.key === 'J') {
@@ -203,7 +212,7 @@ export function NotesView() {
       // Enter - open focused note
       if (e.key === 'Enter' && focusedNoteId) {
         e.preventDefault();
-        const note = notes.find(n => n.id === focusedNoteId);
+        const note = notes.find((n: NoteWithTags) => n.id === focusedNoteId);
         if (note) handleSelectNote(note);
         return;
       }
@@ -219,7 +228,7 @@ export function NotesView() {
       // Duplicate note - Cmd/Ctrl+D
       if ((e.metaKey || e.ctrlKey) && e.key === 'd' && focusedNoteId) {
         e.preventDefault();
-        const note = notes.find(n => n.id === focusedNoteId);
+        const note = notes.find((n: NoteWithTags) => n.id === focusedNoteId);
         if (note) {
           createNote(`${note.title} (copy)`, note.content);
         }
@@ -376,7 +385,7 @@ export function NotesView() {
             />
           ) : (
             <div className="space-y-3">
-              {notes.map(note => (
+              {notes.map((note: NoteWithTags) => (
                 <NoteCard
                   key={note.id}
                   note={note}

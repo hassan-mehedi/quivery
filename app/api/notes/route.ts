@@ -1,52 +1,67 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { NextRequest, NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-middleware';
 import { prisma } from '@/lib/prisma';
 
-export async function GET(request: Request) {
-  try {
-    const session = await getServerSession(authOptions);
+// Higher rate limit for read operations (300 requests/minute)
+export const GET = withAuth(
+  async (request: NextRequest, userId: string, _context: { params: Promise<Record<string, never>> }) => {
+    try {
+      const { searchParams } = new URL(request.url);
 
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // Pagination params
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '50');
+    const skip = (page - 1) * limit;
 
-    const { searchParams } = new URL(request.url);
+    // Filter params
     const search = searchParams.get('search');
     const tagIds = searchParams.get('tags')?.split(',').filter(Boolean);
 
-    const notes = await prisma.note.findMany({
-      where: {
-        userId: session.user.id,
-        ...(search && {
-          OR: [
-            { title: { contains: search, mode: 'insensitive' } },
-            { content: { contains: search, mode: 'insensitive' } },
-          ],
-        }),
-        ...(tagIds?.length && {
-          tags: { some: { tagId: { in: tagIds } } },
-        }),
-      },
-      include: { tags: { include: { tag: true } } },
-      orderBy: [{ sortOrder: 'asc' }, { updatedAt: 'desc' }],
-    });
+    const where: Record<string, unknown> = {
+      userId,
+      ...(search && {
+        OR: [
+          { title: { contains: search, mode: 'insensitive' } },
+          { content: { contains: search, mode: 'insensitive' } },
+        ],
+      }),
+      ...(tagIds?.length && {
+        tags: { some: { tagId: { in: tagIds } } },
+      }),
+    };
 
-    return NextResponse.json(notes);
+    // Fetch notes and count in parallel for pagination
+    const [notes, total] = await Promise.all([
+      prisma.note.findMany({
+        where,
+        include: { tags: { include: { tag: true } } },
+        orderBy: [{ sortOrder: 'asc' }, { updatedAt: 'desc' }],
+        skip,
+        take: limit,
+      }),
+      prisma.note.count({ where }),
+    ]);
+
+    return NextResponse.json({
+      notes,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasMore: skip + notes.length < total,
+      },
+    });
   } catch (error) {
     console.error('GET notes error:', error);
     return NextResponse.json({ error: 'Failed to fetch notes' }, { status: 500 });
   }
-}
+},
+{ rateLimit: 300 }
+);
 
-export async function POST(request: Request) {
+export const POST = withAuth(async (request: NextRequest, userId: string, _context: { params: Promise<Record<string, never>> }) => {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const { title, content, tagIds } = await request.json();
 
     if (!title?.trim()) {
@@ -57,7 +72,7 @@ export async function POST(request: Request) {
       data: {
         title: title.trim(),
         content: content || '',
-        userId: session.user.id,
+        userId,
         ...(tagIds?.length && {
           tags: { create: tagIds.map((tagId: string) => ({ tagId })) },
         }),
@@ -70,4 +85,4 @@ export async function POST(request: Request) {
     console.error('POST note error:', error);
     return NextResponse.json({ error: 'Failed to create note' }, { status: 500 });
   }
-}
+});

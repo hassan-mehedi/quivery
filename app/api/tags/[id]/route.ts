@@ -1,18 +1,12 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { NextRequest, NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-middleware';
 import { prisma } from '@/lib/prisma';
 
-export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export const DELETE = withAuth(async (request: NextRequest, userId: string, { params }: { params: Promise<{ id: string }> }) => {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const { id } = await params;
     const existing = await prisma.tag.findFirst({
-      where: { id, userId: session.user.id },
+      where: { id, userId },
     });
 
     if (!existing) {
@@ -25,4 +19,4 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     console.error('DELETE tag error:', error);
     return NextResponse.json({ error: 'Failed to delete tag' }, { status: 500 });
   }
-}
+});

@@ -58,11 +58,14 @@ export function AppSidebar() {
         )}
       >
         {/* Header */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-sidebar-border">
+        <div className={cn(
+          "h-16 flex items-center border-b border-sidebar-border transition-all duration-200",
+          sidebarOpen ? "justify-between px-4" : "justify-center px-2"
+        )}>
           <div
             className={cn(
               'flex items-center gap-3 transition-opacity duration-200',
-              !sidebarOpen && !isMobile && 'opacity-0'
+              !sidebarOpen && !isMobile && 'opacity-0 w-0'
             )}
           >
             <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center neon-glow-cyan">
@@ -76,7 +79,7 @@ export function AppSidebar() {
               variant="ghost"
               size="icon"
               onClick={toggleSidebar}
-              className="h-8 w-8 hover:bg-sidebar-accent"
+              className="h-8 w-8 hover:bg-sidebar-accent flex-shrink-0"
             >
               <ChevronLeft
                 className={cn(

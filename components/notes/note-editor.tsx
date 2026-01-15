@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { Note, Tag } from '@prisma/client';
 import { ArrowLeft, Trash2, Check, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -16,10 +17,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { RichTextEditor } from './rich-text-editor';
 import { TagSelector } from './tag-selector';
 import { TagBadge } from './tag-badge';
 import { cn } from '@/lib/utils';
+
+// Lazy load the heavy TipTap editor
+const RichTextEditor = dynamic(() => import('./rich-text-editor').then((mod) => ({ default: mod.RichTextEditor })), {
+  loading: () => <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>,
+  ssr: false, // Disable SSR for TipTap editor
+});
 
 type NoteWithTags = Note & {
   tags: { tag: Tag }[];

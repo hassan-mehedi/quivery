@@ -24,17 +24,8 @@ export function useTodos() {
     setError,
   } = useTodoStore();
 
-  // Filter todos client-side based on search query
-  const filteredTodos = useMemo(() => {
-    if (!searchQuery.trim()) return todos;
-
-    const query = searchQuery.toLowerCase();
-    return todos.filter(
-      todo =>
-        todo.title.toLowerCase().includes(query) ||
-        (todo.description && todo.description.toLowerCase().includes(query))
-    );
-  }, [todos, searchQuery]);
+  // Note: Search is now handled server-side in fetchTodos
+  const filteredTodos = todos;
 
   const fetchTodos = useCallback(
     async (includeRelations = true) => {
@@ -51,6 +42,11 @@ export function useTodos() {
           params.set('tagId', filter.tagIds[0]);
         }
 
+        // Database-level search
+        if (searchQuery.trim()) {
+          params.set('search', searchQuery.trim());
+        }
+
         // Include relations by default
         if (includeRelations) {
           params.set('include', 'project,tags,subtasks');
@@ -59,11 +55,18 @@ export function useTodos() {
         const response = await fetch(`/api/todos?${params}`);
 
         if (!response.ok) {
-          throw new Error('Failed to fetch todos');
+          if (response.status === 429) {
+            const message = 'Too many requests. Please slow down and try again in a moment.';
+            setError(message);
+            toast.error(message);
+            return;
+          }
+          const errorData = await response.json().catch(() => ({ error: 'Failed to fetch todos' }));
+          throw new Error(errorData.error || 'Failed to fetch todos');
         }
 
-        const data = await response.json();
-        setTodos(data);
+        const { todos: fetchedTodos } = await response.json();
+        setTodos(fetchedTodos);
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to fetch todos';
         setError(message);
@@ -77,6 +80,7 @@ export function useTodos() {
       filter.priority,
       filter.projectId,
       filter.tagIds,
+      searchQuery,
       setTodos,
       setLoading,
       setError,
@@ -102,7 +106,11 @@ export function useTodos() {
         });
 
         if (!response.ok) {
-          const error = await response.json();
+          if (response.status === 429) {
+            toast.error('Too many requests. Please slow down and try again in a moment.');
+            throw new Error('Rate limit exceeded');
+          }
+          const error = await response.json().catch(() => ({ error: 'Failed to create todo' }));
           throw new Error(error.error || 'Failed to create todo');
         }
 
@@ -112,7 +120,9 @@ export function useTodos() {
         return todo;
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to create todo';
-        toast.error(message);
+        if (message !== 'Rate limit exceeded') {
+          toast.error(message);
+        }
         throw err;
       }
     },
@@ -121,6 +131,10 @@ export function useTodos() {
 
   const editTodo = useCallback(
     async (id: string, data: Partial<Todo>) => {
+      // Optimistic update - update UI immediately
+      const previousTodo = todos.find((t: Todo) => t.id === id);
+      updateTodo(id, data);
+
       try {
         const response = await fetch(`/api/todos/${id}`, {
           method: 'PATCH',
@@ -129,7 +143,11 @@ export function useTodos() {
         });
 
         if (!response.ok) {
-          const error = await response.json();
+          if (response.status === 429) {
+            toast.error('Too many requests. Please slow down and try again in a moment.');
+            throw new Error('Rate limit exceeded');
+          }
+          const error = await response.json().catch(() => ({ error: 'Failed to update todo' }));
           throw new Error(error.error || 'Failed to update todo');
         }
 
@@ -138,35 +156,54 @@ export function useTodos() {
         toast.success('Todo updated successfully');
         return todo;
       } catch (err) {
+        // Rollback on error
+        if (previousTodo) {
+          updateTodo(id, previousTodo);
+        }
         const message = err instanceof Error ? err.message : 'Failed to update todo';
-        toast.error(message);
+        if (message !== 'Rate limit exceeded') {
+          toast.error(message);
+        }
         throw err;
       }
     },
-    [updateTodo]
+    [todos, updateTodo]
   );
 
   const removeTodo = useCallback(
     async (id: string) => {
+      // Optimistic delete - remove from UI immediately
+      const previousTodo = todos.find((t: Todo) => t.id === id);
+      deleteTodo(id);
+
       try {
         const response = await fetch(`/api/todos/${id}`, {
           method: 'DELETE',
         });
 
         if (!response.ok) {
-          const error = await response.json();
+          if (response.status === 429) {
+            toast.error('Too many requests. Please slow down and try again in a moment.');
+            throw new Error('Rate limit exceeded');
+          }
+          const error = await response.json().catch(() => ({ error: 'Failed to delete todo' }));
           throw new Error(error.error || 'Failed to delete todo');
         }
 
-        deleteTodo(id);
         toast.success('Todo deleted successfully');
       } catch (err) {
+        // Rollback on error
+        if (previousTodo) {
+          addTodo(previousTodo);
+        }
         const message = err instanceof Error ? err.message : 'Failed to delete todo';
-        toast.error(message);
+        if (message !== 'Rate limit exceeded') {
+          toast.error(message);
+        }
         throw err;
       }
     },
-    [deleteTodo]
+    [todos, deleteTodo, addTodo]
   );
 
   const toggleStatus = useCallback(
@@ -179,6 +216,10 @@ export function useTodos() {
 
   const bulkComplete = useCallback(
     async (ids: string[]) => {
+      // Optimistic update - mark as completed immediately
+      const previousTodos = ids.map(id => todos.find((t: Todo) => t.id === id)).filter(Boolean);
+      ids.forEach(id => updateTodo(id, { status: 'COMPLETED' as TodoStatus }));
+
       try {
         const response = await fetch('/api/todos/bulk', {
           method: 'POST',
@@ -187,23 +228,36 @@ export function useTodos() {
         });
 
         if (!response.ok) {
-          const error = await response.json();
+          if (response.status === 429) {
+            toast.error('Too many requests. Please slow down and try again in a moment.');
+            throw new Error('Rate limit exceeded');
+          }
+          const error = await response.json().catch(() => ({ error: 'Bulk operation failed' }));
           throw new Error(error.error || 'Bulk operation failed');
         }
 
-        await fetchTodos();
         toast.success(`Completed ${ids.length} todo(s)`);
       } catch (err) {
+        // Rollback on error
+        previousTodos.forEach(todo => {
+          if (todo) updateTodo(todo.id, todo);
+        });
         const message = err instanceof Error ? err.message : 'Bulk operation failed';
-        toast.error(message);
+        if (message !== 'Rate limit exceeded') {
+          toast.error(message);
+        }
         throw err;
       }
     },
-    [fetchTodos]
+    [todos, updateTodo]
   );
 
   const bulkDelete = useCallback(
     async (ids: string[]) => {
+      // Optimistic delete - remove from UI immediately
+      const previousTodos = ids.map(id => todos.find((t: Todo) => t.id === id)).filter(Boolean);
+      ids.forEach(id => deleteTodo(id));
+
       try {
         const response = await fetch('/api/todos/bulk', {
           method: 'POST',
@@ -212,19 +266,28 @@ export function useTodos() {
         });
 
         if (!response.ok) {
-          const error = await response.json();
+          if (response.status === 429) {
+            toast.error('Too many requests. Please slow down and try again in a moment.');
+            throw new Error('Rate limit exceeded');
+          }
+          const error = await response.json().catch(() => ({ error: 'Bulk operation failed' }));
           throw new Error(error.error || 'Bulk operation failed');
         }
 
-        ids.forEach(id => deleteTodo(id));
         toast.success(`Deleted ${ids.length} todo(s)`);
       } catch (err) {
+        // Rollback on error
+        previousTodos.forEach(todo => {
+          if (todo) addTodo(todo);
+        });
         const message = err instanceof Error ? err.message : 'Bulk operation failed';
-        toast.error(message);
+        if (message !== 'Rate limit exceeded') {
+          toast.error(message);
+        }
         throw err;
       }
     },
-    [deleteTodo]
+    [todos, deleteTodo, addTodo]
   );
 
   const bulkUpdate = useCallback(
@@ -232,6 +295,10 @@ export function useTodos() {
       ids: string[],
       updates: { status?: TodoStatus; priority?: Priority; projectId?: string }
     ) => {
+      // Optimistic update - apply changes immediately
+      const previousTodos = ids.map(id => todos.find((t: Todo) => t.id === id)).filter(Boolean);
+      ids.forEach(id => updateTodo(id, updates));
+
       try {
         const response = await fetch('/api/todos/bulk', {
           method: 'POST',
@@ -240,19 +307,28 @@ export function useTodos() {
         });
 
         if (!response.ok) {
-          const error = await response.json();
+          if (response.status === 429) {
+            toast.error('Too many requests. Please slow down and try again in a moment.');
+            throw new Error('Rate limit exceeded');
+          }
+          const error = await response.json().catch(() => ({ error: 'Bulk operation failed' }));
           throw new Error(error.error || 'Bulk operation failed');
         }
 
-        await fetchTodos();
         toast.success(`Updated ${ids.length} todo(s)`);
       } catch (err) {
+        // Rollback on error
+        previousTodos.forEach(todo => {
+          if (todo) updateTodo(todo.id, todo);
+        });
         const message = err instanceof Error ? err.message : 'Bulk operation failed';
-        toast.error(message);
+        if (message !== 'Rate limit exceeded') {
+          toast.error(message);
+        }
         throw err;
       }
     },
-    [fetchTodos]
+    [todos, updateTodo]
   );
 
   const bulkAddTags = useCallback(

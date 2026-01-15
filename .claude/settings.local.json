@@ -18,7 +18,8 @@
       "Bash(findstr:*)",
       "Bash(curl:*)",
       "Bash(find:*)",
-      "Bash(yarn build)"
+      "Bash(yarn build)",
+      "Bash(yarn add:*)"
     ]
   }
 }

@@ -1,28 +1,39 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { NextRequest, NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-middleware';
 import { prisma } from '@/lib/prisma';
 import { TodoStatus, Priority } from '@prisma/client';
 
-export async function GET(request: Request) {
-  try {
-    const session = await getServerSession(authOptions);
+// Higher rate limit for read operations (300 requests/minute)
+export const GET = withAuth(
+  async (request: NextRequest, userId: string, _context: { params: Promise<Record<string, never>> }) => {
+    try {
+      const { searchParams } = new URL(request.url);
 
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // Pagination params
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '50');
+    const skip = (page - 1) * limit;
 
-    const { searchParams } = new URL(request.url);
+    // Filter params
     const statusParam = searchParams.get('status');
     const priorityParam = searchParams.get('priority');
     const projectIdParam = searchParams.get('projectId');
     const tagIdParam = searchParams.get('tagId');
     const includeParam = searchParams.get('include'); // e.g., "project,tags,subtasks"
     const parentIdParam = searchParams.get('parentId'); // null to get only top-level todos
+    const searchQuery = searchParams.get('search'); // Database-level search
 
     const where: Record<string, unknown> = {
-      userId: session.user.id,
+      userId,
     };
+
+    // Database-level search
+    if (searchQuery) {
+      where.OR = [
+        { title: { contains: searchQuery, mode: 'insensitive' } },
+        { description: { contains: searchQuery, mode: 'insensitive' } },
+      ];
+    }
 
     if (statusParam && statusParam !== 'ALL') {
       where.status = statusParam as TodoStatus;
@@ -69,32 +80,43 @@ export async function GET(request: Request) {
       }
     }
 
-    const todos = await prisma.todo.findMany({
-      where,
-      orderBy: [
-        { sortOrder: 'asc' },
-        { status: 'asc' },
-        { priority: 'desc' },
-        { createdAt: 'desc' },
-      ],
-      include: Object.keys(include).length > 0 ? include : undefined,
-    });
+    // Fetch todos and count in parallel for pagination
+    const [todos, total] = await Promise.all([
+      prisma.todo.findMany({
+        where,
+        orderBy: [
+          { sortOrder: 'asc' },
+          { status: 'asc' },
+          { priority: 'desc' },
+          { createdAt: 'desc' },
+        ],
+        include: Object.keys(include).length > 0 ? include : undefined,
+        skip,
+        take: limit,
+      }),
+      prisma.todo.count({ where }),
+    ]);
 
-    return NextResponse.json(todos);
+    return NextResponse.json({
+      todos,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasMore: skip + todos.length < total,
+      },
+    });
   } catch (error) {
     console.error('GET todos error:', error);
     return NextResponse.json({ error: 'Failed to fetch todos' }, { status: 500 });
   }
-}
+},
+{ rateLimit: 300 }
+);
 
-export async function POST(request: Request) {
+export const POST = withAuth(async (request: NextRequest, userId: string, _context: { params: Promise<Record<string, never>> }) => {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const body = await request.json();
     const { title, description, status, priority, dueDate, projectId, tagIds, parentId } = body;
 
@@ -102,41 +124,35 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 });
     }
 
-    // Create the todo
-    const todo = await prisma.todo.create({
-      data: {
-        title: title.trim(),
-        description: description?.trim() || null,
-        status: status || 'PENDING',
-        priority: priority || 'MEDIUM',
-        dueDate: dueDate ? new Date(dueDate) : null,
-        projectId: projectId || null,
-        parentId: parentId || null,
-        userId: session.user.id,
-      },
-      include: {
-        project: true,
-        tags: {
-          include: {
-            tag: true,
-          },
+    // Create the todo with tags in a single transaction
+    const todo = await prisma.$transaction(async (tx) => {
+      const newTodo = await tx.todo.create({
+        data: {
+          title: title.trim(),
+          description: description?.trim() || null,
+          status: status || 'PENDING',
+          priority: priority || 'MEDIUM',
+          dueDate: dueDate ? new Date(dueDate) : null,
+          projectId: projectId || null,
+          parentId: parentId || null,
+          userId,
         },
-      },
-    });
-
-    // Add tags if provided
-    if (tagIds && Array.isArray(tagIds) && tagIds.length > 0) {
-      await prisma.todoTag.createMany({
-        data: tagIds.map((tagId: string) => ({
-          todoId: todo.id,
-          tagId,
-        })),
-        skipDuplicates: true,
       });
 
-      // Fetch the updated todo with tags
-      const updatedTodo = await prisma.todo.findUnique({
-        where: { id: todo.id },
+      // Add tags if provided
+      if (tagIds && Array.isArray(tagIds) && tagIds.length > 0) {
+        await tx.todoTag.createMany({
+          data: tagIds.map((tagId: string) => ({
+            todoId: newTodo.id,
+            tagId,
+          })),
+          skipDuplicates: true,
+        });
+      }
+
+      // Fetch with relations
+      return tx.todo.findUnique({
+        where: { id: newTodo.id },
         include: {
           project: true,
           tags: {
@@ -146,13 +162,11 @@ export async function POST(request: Request) {
           },
         },
       });
-
-      return NextResponse.json(updatedTodo, { status: 201 });
-    }
+    });
 
     return NextResponse.json(todo, { status: 201 });
   } catch (error) {
     console.error('POST todo error:', error);
     return NextResponse.json({ error: 'Failed to create todo' }, { status: 500 });
   }
-}
+});

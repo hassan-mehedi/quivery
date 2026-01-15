@@ -59,7 +59,12 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
     immediatelyRender: false,
     extensions: [
       StarterKit.configure({
+        // Optimize bundle size by disabling unused extensions
         heading: { levels: [1, 2] },
+        codeBlock: false, // Only using inline code, not code blocks
+        horizontalRule: false, // Not used in UI
+        dropcursor: false, // Not needed for this use case
+        gapcursor: false, // Not needed for this use case
       }),
       Placeholder.configure({
         placeholder: placeholder || 'Start writing...',

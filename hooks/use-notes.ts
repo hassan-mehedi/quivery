@@ -33,13 +33,22 @@ export function useNotes() {
         if (tagIds?.length) params.set('tags', tagIds.join(','));
 
         const response = await fetch(`/api/notes?${params}`);
-        if (!response.ok) throw new Error('Failed to fetch notes');
 
-        const data = await response.json();
-        setNotes(data);
+        if (!response.ok) {
+          if (response.status === 429) {
+            toast.error('Too many requests. Please slow down and try again in a moment.');
+            return;
+          }
+          const errorData = await response.json().catch(() => ({ error: 'Failed to fetch notes' }));
+          throw new Error(errorData.error || 'Failed to fetch notes');
+        }
+
+        const { notes: fetchedNotes } = await response.json();
+        setNotes(fetchedNotes);
       } catch (error) {
         console.error('Error fetching notes:', error);
-        toast.error('Failed to fetch notes');
+        const message = error instanceof Error ? error.message : 'Failed to fetch notes';
+        toast.error(message);
       } finally {
         setLoading(false);
       }
@@ -50,13 +59,22 @@ export function useNotes() {
   const fetchTags = useCallback(async () => {
     try {
       const response = await fetch('/api/tags');
-      if (!response.ok) throw new Error('Failed to fetch tags');
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          toast.error('Too many requests. Please slow down and try again in a moment.');
+          return;
+        }
+        const errorData = await response.json().catch(() => ({ error: 'Failed to fetch tags' }));
+        throw new Error(errorData.error || 'Failed to fetch tags');
+      }
 
       const data = await response.json();
       setTags(data);
     } catch (error) {
       console.error('Error fetching tags:', error);
-      toast.error('Failed to fetch tags');
+      const message = error instanceof Error ? error.message : 'Failed to fetch tags';
+      toast.error(message);
     }
   }, [setTags]);
 

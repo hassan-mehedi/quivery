@@ -1,19 +1,14 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { NextRequest, NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-middleware';
 import { prisma } from '@/lib/prisma';
 
-export async function GET() {
-  try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const projects = await prisma.project.findMany({
+// Higher rate limit for read operations (300 requests/minute)
+export const GET = withAuth(
+  async (request: NextRequest, userId: string, _context: { params: Promise<Record<string, never>> }) => {
+    try {
+      const projects = await prisma.project.findMany({
       where: {
-        userId: session.user.id,
+        userId,
       },
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
       include: {
@@ -23,21 +18,22 @@ export async function GET() {
       },
     });
 
-    return NextResponse.json(projects);
+    return NextResponse.json(projects, {
+      headers: {
+        // Cache for 5 minutes (projects rarely change)
+        'Cache-Control': 'private, max-age=300, stale-while-revalidate=600',
+      },
+    });
   } catch (error) {
     console.error('GET projects error:', error);
     return NextResponse.json({ error: 'Failed to fetch projects' }, { status: 500 });
   }
-}
+},
+{ rateLimit: 300 }
+);
 
-export async function POST(request: Request) {
+export const POST = withAuth(async (request: NextRequest, userId: string, _context: { params: Promise<Record<string, never>> }) => {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const body = await request.json();
     const { name, color, icon } = body;
 
@@ -50,7 +46,7 @@ export async function POST(request: Request) {
         name: name.trim(),
         color: color || '#8B5CF6',
         icon: icon || null,
-        userId: session.user.id,
+        userId,
       },
     });
 
@@ -59,4 +55,4 @@ export async function POST(request: Request) {
     console.error('POST project error:', error);
     return NextResponse.json({ error: 'Failed to create project' }, { status: 500 });
   }
-}
+});

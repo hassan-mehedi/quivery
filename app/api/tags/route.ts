@@ -1,34 +1,32 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { NextRequest, NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-middleware';
 import { prisma } from '@/lib/prisma';
 
-export async function GET() {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const tags = await prisma.tag.findMany({
-      where: { userId: session.user.id },
+// Higher rate limit for read operations (300 requests/minute)
+export const GET = withAuth(
+  async (request: NextRequest, userId: string, _context: { params: Promise<Record<string, never>> }) => {
+    try {
+      const tags = await prisma.tag.findMany({
+      where: { userId },
       orderBy: { name: 'asc' },
     });
 
-    return NextResponse.json(tags);
+    return NextResponse.json(tags, {
+      headers: {
+        // Cache for 5 minutes (tags rarely change)
+        'Cache-Control': 'private, max-age=300, stale-while-revalidate=600',
+      },
+    });
   } catch (error) {
     console.error('GET tags error:', error);
     return NextResponse.json({ error: 'Failed to fetch tags' }, { status: 500 });
   }
-}
+},
+{ rateLimit: 300 }
+);
 
-export async function POST(request: Request) {
+export const POST = withAuth(async (request: NextRequest, userId: string, _context: { params: Promise<Record<string, never>> }) => {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const { name, color } = await request.json();
 
     if (!name?.trim()) {
@@ -36,7 +34,7 @@ export async function POST(request: Request) {
     }
 
     const existing = await prisma.tag.findFirst({
-      where: { name: name.trim(), userId: session.user.id },
+      where: { name: name.trim(), userId },
     });
 
     if (existing) {
@@ -47,7 +45,7 @@ export async function POST(request: Request) {
       data: {
         name: name.trim(),
         color: color || '#8B5CF6',
-        userId: session.user.id,
+        userId,
       },
     });
 
@@ -56,4 +54,4 @@ export async function POST(request: Request) {
     console.error('POST tag error:', error);
     return NextResponse.json({ error: 'Failed to create tag' }, { status: 500 });
   }
-}
+});

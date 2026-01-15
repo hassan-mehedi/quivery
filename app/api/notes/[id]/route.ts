@@ -1,18 +1,12 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { NextRequest, NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-middleware';
 import { prisma } from '@/lib/prisma';
 
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export const GET = withAuth(async (request: NextRequest, userId: string, { params }: { params: Promise<{ id: string }> }) => {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const { id } = await params;
     const note = await prisma.note.findFirst({
-      where: { id, userId: session.user.id },
+      where: { id, userId },
       include: { tags: { include: { tag: true } } },
     });
 
@@ -25,27 +19,25 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     console.error('GET note error:', error);
     return NextResponse.json({ error: 'Failed to fetch note' }, { status: 500 });
   }
-}
+});
 
-export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export const PATCH = withAuth(async (request: NextRequest, userId: string, { params }: { params: Promise<{ id: string }> }) => {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const { id } = await params;
-    const existing = await prisma.note.findFirst({
-      where: { id, userId: session.user.id },
-    });
-
-    if (!existing) {
-      return NextResponse.json({ error: 'Note not found' }, { status: 404 });
-    }
-
     const { title, content, tagIds } = await request.json();
 
     const note = await prisma.$transaction(async tx => {
+      // Verify ownership
+      const existing = await tx.note.findFirst({
+        where: { id, userId },
+        select: { id: true },
+      });
+
+      if (!existing) {
+        throw new Error('NOT_FOUND');
+      }
+
+      // Update note
       await tx.note.update({
         where: { id },
         data: {
@@ -54,12 +46,39 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         },
       });
 
-      if (tagIds !== undefined) {
-        await tx.noteTag.deleteMany({ where: { noteId: id } });
-        if (tagIds.length > 0) {
-          await tx.noteTag.createMany({
-            data: tagIds.map((tagId: string) => ({ noteId: id, tagId })),
-          });
+      // Update tags if provided (differential sync - only update what changed)
+      if (tagIds !== undefined && Array.isArray(tagIds)) {
+        // Get existing tags
+        const existingTags = await tx.noteTag.findMany({
+          where: { noteId: id },
+          select: { tagId: true },
+        });
+
+        const existingTagIds = existingTags.map(t => t.tagId);
+        const tagsToAdd = tagIds.filter(tagId => !existingTagIds.includes(tagId));
+        const tagsToRemove = existingTagIds.filter(tagId => !tagIds.includes(tagId));
+
+        // Only execute operations for tags that actually changed
+        const operations = [];
+
+        if (tagsToRemove.length > 0) {
+          operations.push(
+            tx.noteTag.deleteMany({
+              where: { noteId: id, tagId: { in: tagsToRemove } },
+            })
+          );
+        }
+
+        if (tagsToAdd.length > 0) {
+          operations.push(
+            tx.noteTag.createMany({
+              data: tagsToAdd.map((tagId: string) => ({ noteId: id, tagId })),
+            })
+          );
+        }
+
+        if (operations.length > 0) {
+          await Promise.all(operations);
         }
       }
 
@@ -71,31 +90,38 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     return NextResponse.json(note);
   } catch (error) {
+    if (error instanceof Error && error.message === 'NOT_FOUND') {
+      return NextResponse.json({ error: 'Note not found' }, { status: 404 });
+    }
     console.error('PATCH note error:', error);
     return NextResponse.json({ error: 'Failed to update note' }, { status: 500 });
   }
-}
+});
 
-export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export const DELETE = withAuth(async (request: NextRequest, userId: string, { params }: { params: Promise<{ id: string }> }) => {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const { id } = await params;
-    const existing = await prisma.note.findFirst({
-      where: { id, userId: session.user.id },
+
+    const result = await prisma.$transaction(async tx => {
+      const existing = await tx.note.findFirst({
+        where: { id, userId },
+        select: { id: true },
+      });
+
+      if (!existing) {
+        throw new Error('NOT_FOUND');
+      }
+
+      await tx.note.delete({ where: { id } });
+      return { success: true };
     });
 
-    if (!existing) {
+    return NextResponse.json(result);
+  } catch (error) {
+    if (error instanceof Error && error.message === 'NOT_FOUND') {
       return NextResponse.json({ error: 'Note not found' }, { status: 404 });
     }
-
-    await prisma.note.delete({ where: { id } });
-    return NextResponse.json({ success: true });
-  } catch (error) {
     console.error('DELETE note error:', error);
     return NextResponse.json({ error: 'Failed to delete note' }, { status: 500 });
   }
-}
+});

@@ -103,6 +103,36 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   output: 'standalone',
   turbopack: {},
+
+  // Performance: Remove console logs in production
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
+  },
+
+  // Image optimization configuration
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: '**.githubusercontent.com' },
+      { protocol: 'https', hostname: '**.googleusercontent.com' },
+    ],
+    formats: ['image/avif', 'image/webp'],
+    minimumCacheTTL: 60,
+  },
+
+  // Experimental: Optimize package imports for smaller bundles
+  experimental: {
+    optimizePackageImports: [
+      'lucide-react',
+      '@radix-ui/react-dialog',
+      '@radix-ui/react-dropdown-menu',
+      '@radix-ui/react-select',
+      '@radix-ui/react-popover',
+      '@radix-ui/react-tabs',
+      '@radix-ui/react-avatar',
+      '@radix-ui/react-tooltip',
+      '@radix-ui/react-context-menu',
+    ],
+  },
 };
 
 export default withPWA(nextConfig);

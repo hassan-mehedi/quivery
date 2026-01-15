@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-middleware';
 import { prisma } from '@/lib/prisma';
 
-export async function PATCH(request: NextRequest) {
+export const PATCH = withAuth(async (request: NextRequest, userId: string, _context: { params: Promise<Record<string, never>> }) => {
   try {
     const body = await request.json();
     const { updates } = body;
@@ -20,11 +21,14 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
-    // Update all notes in a transaction
+    // Update all notes in a transaction (with ownership verification)
     await prisma.$transaction(
       updates.map(update =>
         prisma.note.update({
-          where: { id: update.id },
+          where: {
+            id: update.id,
+            userId, // Ensure user owns the note
+          },
           data: { sortOrder: update.order },
         })
       )
@@ -35,4 +39,4 @@ export async function PATCH(request: NextRequest) {
     console.error('Error updating note order:', error);
     return NextResponse.json({ error: 'Failed to update note order' }, { status: 500 });
   }
-}
+});

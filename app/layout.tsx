@@ -4,6 +4,7 @@ import { SessionProvider } from '@/components/providers/session-provider';
 import { Toaster } from '@/components/ui/sonner';
 import { OfflineIndicator } from '@/components/ui/offline-indicator';
 import { PWARegister } from '@/components/pwa-register';
+import { WebVitals } from '@/components/web-vitals';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -56,6 +57,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Toaster position="bottom-right" />
           <OfflineIndicator />
           <PWARegister />
+          <WebVitals />
         </SessionProvider>
       </body>
     </html>
