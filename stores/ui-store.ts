@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-type View = 'todos' | 'notes';
+type View = 'todos' | 'notes' | 'json-editor';
 
 interface UIState {
   currentView: View;

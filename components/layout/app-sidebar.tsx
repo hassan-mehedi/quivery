@@ -1,7 +1,7 @@
 'use client';
 
 import { signOut, useSession } from 'next-auth/react';
-import { CheckSquare, FileText, LogOut, Settings, ChevronLeft, Zap } from 'lucide-react';
+import { CheckSquare, FileText, Braces, LogOut, Settings, ChevronLeft, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -29,13 +29,20 @@ const navigation = [
     glowClass: 'neon-glow-pink',
     activeColor: 'text-neon-pink',
   },
+  {
+    name: 'JSON Editor',
+    view: 'json-editor' as const,
+    icon: Braces,
+    glowClass: 'neon-glow-purple',
+    activeColor: 'text-neon-purple',
+  },
 ];
 
 export function AppSidebar() {
   const { data: session } = useSession();
   const { currentView, setCurrentView, sidebarOpen, toggleSidebar, isMobile } = useUIStore();
 
-  const handleNavigation = (view: 'todos' | 'notes') => {
+  const handleNavigation = (view: 'todos' | 'notes' | 'json-editor') => {
     setCurrentView(view);
     if (isMobile) {
       toggleSidebar();
