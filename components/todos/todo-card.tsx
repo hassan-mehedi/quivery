@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, memo } from 'react';
+import { useSwipeable } from 'react-swipeable';
 import { Todo } from '@prisma/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -18,7 +19,7 @@ import { StatusBadge } from './status-badge';
 import { PriorityBadge } from './priority-badge';
 import { SubtaskList } from './subtask-list';
 import { cn, formatRelativeDate } from '@/lib/utils';
-import { MoreVertical, Pencil, Trash2, Calendar } from 'lucide-react';
+import { MoreVertical, Pencil, Trash2, Calendar, Check } from 'lucide-react';
 
 interface TodoCardProps {
   todo: Todo & {
@@ -57,6 +58,8 @@ const TodoCardComponent = ({
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [titleValue, setTitleValue] = useState(todo.title);
   const [descriptionValue, setDescriptionValue] = useState(todo.description || '');
+  const [swipeOffset, setSwipeOffset] = useState(0);
+  const [isSwiping, setIsSwiping] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const descriptionInputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -127,19 +130,82 @@ const TodoCardComponent = ({
     }
   };
 
+  // Swipe handlers
+  const swipeHandlers = useSwipeable({
+    onSwiping: (eventData) => {
+      // Prevent swiping when editing
+      if (isEditingTitle || isEditingDescription) return;
+
+      setIsSwiping(true);
+      const delta = eventData.deltaX;
+      // Limit swipe offset to prevent excessive swiping
+      const maxOffset = 100;
+      setSwipeOffset(Math.max(-maxOffset, Math.min(maxOffset, delta)));
+    },
+    onSwipedRight: () => {
+      if (isEditingTitle || isEditingDescription) return;
+
+      // Right swipe - mark as done
+      if (swipeOffset > 50 && !isCompleted) {
+        onToggle(todo.id);
+      }
+      setSwipeOffset(0);
+      setIsSwiping(false);
+    },
+    onSwipedLeft: () => {
+      if (isEditingTitle || isEditingDescription) return;
+
+      // Left swipe - delete
+      if (swipeOffset < -50) {
+        onDelete(todo.id);
+      }
+      setSwipeOffset(0);
+      setIsSwiping(false);
+    },
+    onSwiped: () => {
+      setSwipeOffset(0);
+      setIsSwiping(false);
+    },
+    trackMouse: false,
+    trackTouch: true,
+  });
+
   return (
-    <Card
-      onClick={handleCardClick}
-      className={cn(
-        'group transition-all duration-200 border-border/50 hover:border-border',
-        'bg-card/50 backdrop-blur-sm hover:bg-card/80',
-        isDimmed && 'opacity-60',
-        isFocused && 'ring-2 ring-neon-cyan ring-offset-2 ring-offset-background',
-        isSelected && 'ring-2 ring-neon-cyan bg-neon-cyan/5',
-        (isMultiSelectMode || isSelected) && 'cursor-pointer'
+    <div className="relative overflow-hidden rounded-lg" {...swipeHandlers}>
+      {/* Swipe Background Indicators */}
+      {swipeOffset > 0 && (
+        <div
+          className="absolute inset-y-0 left-0 bg-green-500/20 flex items-center justify-start px-4 transition-all"
+          style={{ width: `${Math.min((swipeOffset / 50) * 100, 100)}%` }}
+        >
+          <Check className="h-5 w-5 text-green-500" />
+        </div>
       )}
-    >
-      <CardContent className="p-4">
+      {swipeOffset < 0 && (
+        <div
+          className="absolute inset-y-0 right-0 bg-red-500/20 flex items-center justify-end px-4 transition-all"
+          style={{ width: `${Math.min((Math.abs(swipeOffset) / 50) * 100, 100)}%` }}
+        >
+          <Trash2 className="h-5 w-5 text-red-500" />
+        </div>
+      )}
+
+      <Card
+        onClick={handleCardClick}
+        style={{
+          transform: `translateX(${swipeOffset}px)`,
+          transition: isSwiping ? 'none' : 'transform 0.2s ease-out',
+        }}
+        className={cn(
+          'group transition-all duration-200 border-border/50 hover:border-border',
+          'bg-card/50 backdrop-blur-sm hover:bg-card/80',
+          isDimmed && 'opacity-60',
+          isFocused && 'ring-2 ring-neon-cyan ring-offset-2 ring-offset-background',
+          isSelected && 'ring-2 ring-neon-cyan bg-neon-cyan/5',
+          (isMultiSelectMode || isSelected) && 'cursor-pointer'
+        )}
+      >
+        <CardContent className="p-4">
         <div className="flex items-start gap-3">
           {/* Multi-Select Checkbox (only shown in multi-select mode or when selected) */}
           {(isMultiSelectMode || isSelected) && onSelect && (
@@ -200,7 +266,7 @@ const TodoCardComponent = ({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                    className="h-8 w-8 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0"
                   >
                     <MoreVertical className="h-4 w-4" />
                   </Button>
@@ -293,6 +359,7 @@ const TodoCardComponent = ({
         </div>
       </CardContent>
     </Card>
+    </div>
   );
 };
 

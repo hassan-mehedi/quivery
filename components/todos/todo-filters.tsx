@@ -68,7 +68,7 @@ export function TodoFilters({
     status !== 'ALL' || priority !== 'ALL' || projectId !== 'ALL' || tagIds.length > 0;
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center justify-center gap-2">
       <Select value={status} onValueChange={onStatusChange}>
         <SelectTrigger className="w-[140px] h-9 text-sm" suppressHydrationWarning>
           <SelectValue />

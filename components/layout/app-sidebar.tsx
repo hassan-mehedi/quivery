@@ -65,7 +65,7 @@ export function AppSidebar() {
           <div
             className={cn(
               'flex items-center gap-3 transition-opacity duration-200',
-              !sidebarOpen && !isMobile && 'opacity-0 w-0'
+              !sidebarOpen && 'opacity-0 w-0'
             )}
           >
             <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center neon-glow-cyan">
@@ -79,11 +79,11 @@ export function AppSidebar() {
               variant="ghost"
               size="icon"
               onClick={toggleSidebar}
-              className="h-8 w-8 hover:bg-sidebar-accent flex-shrink-0"
+              className="h-10 w-10 hover:bg-sidebar-accent flex-shrink-0"
             >
               <ChevronLeft
                 className={cn(
-                  'h-4 w-4 transition-transform duration-300',
+                  'h-5 w-5 transition-transform duration-300',
                   !sidebarOpen && 'rotate-180'
                 )}
               />
@@ -122,7 +122,7 @@ export function AppSidebar() {
                     isActive
                       ? item.activeColor
                       : 'text-muted-foreground group-hover:text-foreground',
-                    !sidebarOpen && !isMobile && 'opacity-0 w-0'
+                    !sidebarOpen && 'opacity-0 w-0'
                   )}
                 >
                   {item.name}
@@ -154,7 +154,7 @@ export function AppSidebar() {
                 <div
                   className={cn(
                     'flex-1 text-left transition-all duration-200 overflow-hidden',
-                    !sidebarOpen && !isMobile && 'opacity-0 w-0'
+                    !sidebarOpen && 'opacity-0 w-0'
                   )}
                 >
                   <p className="text-sm font-medium text-foreground truncate">

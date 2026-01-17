@@ -22,10 +22,17 @@ import { TagBadge } from './tag-badge';
 import { cn } from '@/lib/utils';
 
 // Lazy load the heavy TipTap editor
-const RichTextEditor = dynamic(() => import('./rich-text-editor').then((mod) => ({ default: mod.RichTextEditor })), {
-  loading: () => <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>,
-  ssr: false, // Disable SSR for TipTap editor
-});
+const RichTextEditor = dynamic(
+  () => import('./rich-text-editor').then(mod => ({ default: mod.RichTextEditor })),
+  {
+    loading: () => (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    ),
+    ssr: false, // Disable SSR for TipTap editor
+  }
+);
 
 type NoteWithTags = Note & {
   tags: { tag: Tag }[];

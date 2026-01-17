@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { Todo, Priority } from '@prisma/client';
 import { useTodos } from '@/hooks/use-todos';
 import { useTodoStore } from '@/stores/todo-store';
+import { useUIStore } from '@/stores/ui-store';
 import {
   DndContext,
   DragEndEvent,
@@ -24,8 +25,9 @@ import { SearchBar } from './search-bar';
 import { BulkActionsBar } from './bulk-actions-bar';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, CheckSquare, Loader2, Keyboard, List, Calendar, CheckCheck } from 'lucide-react';
+import { Plus, CheckSquare, Loader2, Keyboard, List, Calendar, CheckCheck, Search } from 'lucide-react';
 
 // Lazy load heavy components
 const TodoDialog = dynamic(() => import('./todo-dialog').then((mod) => ({ default: mod.TodoDialog })), {
@@ -47,6 +49,7 @@ import {
 } from '@/components/ui/alert-dialog';
 
 export function TodoView() {
+  const isMobile = useUIStore(state => state.isMobile);
   const {
     todos,
     isLoading,
@@ -387,6 +390,169 @@ export function TodoView() {
   const completedCount = todos.filter((t: Todo) => t.status === 'COMPLETED').length;
   const totalCount = todos.length;
 
+  // Mobile view: simplified layout
+  if (isMobile) {
+    return (
+      <div className="h-full flex flex-col" ref={viewRef}>
+        {/* Top Bar */}
+        <div className="p-4 border-b border-border">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Search todos..."
+              className="pl-9 text-foreground"
+            />
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="p-4 border-b border-border">
+          <TodoFilters
+            status={filter.status}
+            priority={filter.priority}
+            projectId={filter.projectId}
+            tagIds={filter.tagIds}
+            onStatusChange={status => setFilter({ status })}
+            onPriorityChange={priority => setFilter({ priority })}
+            onProjectChange={projectId => setFilter({ projectId })}
+            onTagChange={tagIds => setFilter({ tagIds })}
+            onClear={() => setFilter({ status: 'ALL', priority: 'ALL', projectId: 'ALL', tagIds: [] })}
+          />
+        </div>
+
+        {/* Content - Always list view on mobile */}
+        <div className="flex-1 overflow-auto p-4">
+          {isLoading ? (
+            <div className="space-y-3">
+              {[...Array(3)].map((_, i) => (
+                <Skeleton key={i} className="h-24 w-full" />
+              ))}
+            </div>
+          ) : todos.length === 0 ? (
+            <EmptyState
+              icon={CheckSquare}
+              title="No todos yet"
+              description="Create your first todo to get started organizing your tasks."
+              action={
+                <Button onClick={handleCreate} className="neon-glow-cyan">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Todo
+                </Button>
+              }
+            />
+          ) : (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext items={todos.map((t: Todo) => t.id)} strategy={verticalListSortingStrategy}>
+                <div className="space-y-2">
+                  {todos.map((todo: Todo) => (
+                    <DraggableTodoCard
+                      key={todo.id}
+                      todo={todo}
+                      onToggle={handleToggle}
+                      onEdit={handleEdit}
+                      onDelete={setDeleteId}
+                      onUpdate={handleUpdate}
+                      onCreateSubtask={handleCreateSubtask}
+                      onToggleSubtask={handleToggle}
+                      onUpdateSubtask={handleUpdateSubtask}
+                      onDeleteSubtask={handleDeleteSubtask}
+                      isFocused={focusedTodoId === todo.id}
+                      isSelected={selectedTodoIds.has(todo.id)}
+                      onSelect={toggleTodoSelection}
+                      isMultiSelectMode={isMultiSelectMode}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+
+              {/* Drag Overlay */}
+              <DragOverlay>
+                {activeTodo ? (
+                  <div className="opacity-90 rotate-2 scale-105">
+                    <TodoCard
+                      todo={activeTodo}
+                      onToggle={() => {}}
+                      onEdit={() => {}}
+                      onDelete={() => {}}
+                      onUpdate={async () => {}}
+                    />
+                  </div>
+                ) : null}
+              </DragOverlay>
+            </DndContext>
+          )}
+        </div>
+
+        {/* Floating Add Button */}
+        <div className="fixed bottom-6 right-6 z-40">
+          <Button
+            onClick={handleCreate}
+            size="lg"
+            className="h-14 w-14 rounded-full shadow-lg neon-glow-cyan"
+            title="Add Todo"
+          >
+            <Plus className="w-6 h-6" />
+          </Button>
+        </div>
+
+        {/* Quick Add Input */}
+        <QuickAddInput
+          isVisible={showQuickAdd}
+          onSubmit={handleQuickAdd}
+          onCancel={() => setShowQuickAdd(false)}
+        />
+
+        {/* Bulk Actions Bar */}
+        <BulkActionsBar />
+
+        {/* Create/Edit Dialog */}
+        <TodoDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          todo={editingTodo}
+          onSubmit={handleSubmit}
+        />
+
+        {/* Delete Confirmation */}
+        <AlertDialog open={!!deleteId} onOpenChange={open => !open && setDeleteId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Todo</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this todo? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  'Delete'
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    );
+  }
+
+  // Desktop view: full featured layout
   return (
     <div className="space-y-6 px-6 py-6" ref={viewRef}>
       {/* Header */}
@@ -678,18 +844,6 @@ export function TodoView() {
 
       {/* Bulk Actions Bar */}
       <BulkActionsBar />
-
-      {/* Floating Add Button (Mobile Only) */}
-      <div className="fixed bottom-6 right-6 md:hidden z-40">
-        <Button
-          onClick={handleCreate}
-          size="lg"
-          className="h-14 w-14 rounded-full shadow-lg neon-glow-cyan"
-          title="Add Todo"
-        >
-          <Plus className="w-6 h-6" />
-        </Button>
-      </div>
 
       {/* Create/Edit Dialog */}
       <TodoDialog
