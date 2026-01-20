@@ -42,7 +42,6 @@ export const POST = withAuth(async (request: NextRequest, userId: string, _conte
         content,
         userId,
       },
-      include: { schema: true },
     });
 
     return NextResponse.json(document, { status: 201 });
