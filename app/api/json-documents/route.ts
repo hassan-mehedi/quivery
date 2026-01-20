@@ -15,7 +15,6 @@ export const GET = withAuth(
 
       // Filter params
       const search = searchParams.get('search');
-      const schemaId = searchParams.get('schemaId');
 
       const where: Record<string, unknown> = {
         userId,
@@ -26,14 +25,12 @@ export const GET = withAuth(
             { description: { contains: search, mode: 'insensitive' } },
           ],
         }),
-        ...(schemaId && { schemaId }),
       };
 
       // Fetch documents and count in parallel for pagination
       const [documents, total] = await Promise.all([
         prisma.jsonDocument.findMany({
           where,
-          include: { schema: true },
           orderBy: [{ sortOrder: 'asc' }, { updatedAt: 'desc' }],
           skip,
           take: limit,
@@ -61,7 +58,7 @@ export const GET = withAuth(
 
 export const POST = withAuth(async (request: NextRequest, userId: string, _context: { params: Promise<Record<string, never>> }) => {
   try {
-    const { title, content, description, schemaId } = await request.json();
+    const { title, content, description } = await request.json();
 
     if (!title?.trim()) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 });
@@ -78,25 +75,13 @@ export const POST = withAuth(async (request: NextRequest, userId: string, _conte
       }
     }
 
-    // Verify schema exists if provided
-    if (schemaId) {
-      const schema = await prisma.jsonSchema.findUnique({
-        where: { id: schemaId, userId },
-      });
-      if (!schema) {
-        return NextResponse.json({ error: 'Schema not found' }, { status: 404 });
-      }
-    }
-
     const document = await prisma.jsonDocument.create({
       data: {
         title: title.trim(),
         content: parsedContent,
         description: description?.trim() || null,
         userId,
-        schemaId: schemaId || null,
       },
-      include: { schema: true },
     });
 
     return NextResponse.json(document, { status: 201 });

@@ -19,7 +19,9 @@
       "Bash(curl:*)",
       "Bash(find:*)",
       "Bash(yarn build)",
-      "Bash(yarn add:*)"
+      "Bash(yarn add:*)",
+      "Bash(npx prisma migrate dev:*)",
+      "Bash(npx prisma db push:*)"
     ]
   }
 }

@@ -6,7 +6,7 @@ import { useJsonEditorStore } from '@/stores/json-editor-store';
 import { JsonDocumentCard } from './json-document-card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Search, Loader2 } from 'lucide-react';
+import { Plus, Search, Loader2, Upload } from 'lucide-react';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -21,8 +21,8 @@ export function JsonEditorView() {
     isLoading,
     searchQuery,
     fetchDocuments,
-    fetchSchemas,
     createDocument,
+    importDocument,
     selectDocument,
   } = useJsonEditor();
 
@@ -30,14 +30,26 @@ export function JsonEditorView() {
 
   useEffect(() => {
     fetchDocuments();
-    fetchSchemas();
-  }, [fetchDocuments, fetchSchemas]);
+  }, [fetchDocuments]);
 
   const handleCreateDocument = async () => {
     try {
       await createDocument('New JSON Document', '{}');
     } catch (error) {
       console.error('Error creating document:', error);
+    }
+  };
+
+  const handleImportDocument = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      await importDocument(file);
+      // Reset the input so the same file can be uploaded again
+      event.target.value = '';
+    } catch (error) {
+      console.error('Error importing document:', error);
     }
   };
 
@@ -63,10 +75,24 @@ export function JsonEditorView() {
           </p>
         </div>
 
-        <Button onClick={handleCreateDocument} className="neon-glow-purple">
-          <Plus className="h-4 w-4 mr-2" />
-          New Document
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleCreateDocument} className="neon-glow-purple">
+            <Plus className="h-4 w-4 mr-2" />
+            New Document
+          </Button>
+          <Button variant="outline" asChild>
+            <label className="cursor-pointer">
+              <Upload className="h-4 w-4 mr-2" />
+              Import
+              <input
+                type="file"
+                accept=".json"
+                className="hidden"
+                onChange={handleImportDocument}
+              />
+            </label>
+          </Button>
+        </div>
       </div>
 
       {/* Search */}

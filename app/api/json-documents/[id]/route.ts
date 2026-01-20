@@ -7,7 +7,6 @@ export const GET = withAuth(async (request: NextRequest, userId: string, { param
     const { id } = await params;
     const document = await prisma.jsonDocument.findFirst({
       where: { id, userId },
-      include: { schema: true },
     });
 
     if (!document) {
@@ -24,7 +23,7 @@ export const GET = withAuth(async (request: NextRequest, userId: string, { param
 export const PATCH = withAuth(async (request: NextRequest, userId: string, { params }: { params: Promise<{ id: string }> }) => {
   try {
     const { id } = await params;
-    const { title, content, description, schemaId, lastViewMode } = await request.json();
+    const { title, content, description } = await request.json();
 
     const document = await prisma.$transaction(async tx => {
       // Verify ownership
@@ -46,16 +45,6 @@ export const PATCH = withAuth(async (request: NextRequest, userId: string, { par
         }
       }
 
-      // Verify schema exists if provided
-      if (schemaId !== undefined && schemaId !== null) {
-        const schema = await tx.jsonSchema.findUnique({
-          where: { id: schemaId, userId },
-        });
-        if (!schema) {
-          throw new Error('SCHEMA_NOT_FOUND');
-        }
-      }
-
       // Update document
       const updatedDocument = await tx.jsonDocument.update({
         where: { id },
@@ -63,10 +52,7 @@ export const PATCH = withAuth(async (request: NextRequest, userId: string, { par
           ...(title !== undefined && { title: title.trim() }),
           ...(content !== undefined && { content }),
           ...(description !== undefined && { description: description?.trim() || null }),
-          ...(schemaId !== undefined && { schemaId: schemaId || null }),
-          ...(lastViewMode !== undefined && { lastViewMode }),
         },
-        include: { schema: true },
       });
 
       return updatedDocument;
@@ -80,9 +66,6 @@ export const PATCH = withAuth(async (request: NextRequest, userId: string, { par
       }
       if (error.message === 'INVALID_JSON') {
         return NextResponse.json({ error: 'Invalid JSON syntax' }, { status: 400 });
-      }
-      if (error.message === 'SCHEMA_NOT_FOUND') {
-        return NextResponse.json({ error: 'Schema not found' }, { status: 404 });
       }
     }
     console.error('PATCH json-document error:', error);

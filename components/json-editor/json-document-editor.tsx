@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect, lazy, Suspense } from 'react';
-import { JsonDocumentWithSchema } from '@/stores/json-editor-store';
+import { JsonDocument } from '@prisma/client';
 import { useJsonEditor } from '@/hooks/use-json-editor';
+import { useJsonEditorStore } from '@/stores/json-editor-store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,32 +17,53 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { X, Trash2, Check, Loader2, AlertCircle } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { X, Trash2, Check, Loader2, AlertCircle, Download, MoreVertical, Copy, FileJson, Maximize2, Minimize2, GitCompare } from 'lucide-react';
+import { DiffEditor } from '@monaco-editor/react';
+import { toast } from 'sonner';
 
-// Lazy load the Monaco editor
+// Lazy load the editor
 const JsonCodeEditor = lazy(() =>
   import('./json-code-editor').then(mod => ({ default: mod.JsonCodeEditor }))
 );
 
 interface JsonDocumentEditorProps {
-  document: JsonDocumentWithSchema;
+  document: JsonDocument;
   onClose: () => void;
 }
 
 export function JsonDocumentEditor({ document, onClose }: JsonDocumentEditorProps) {
   const { debouncedSave, removeDocument, saveStatus } = useJsonEditor();
+  const { documents, isFullscreen, setFullscreen } = useJsonEditorStore();
 
   const [title, setTitle] = useState(document.title);
   const [description, setDescription] = useState(document.description || '');
   const [content, setContent] = useState(document.content);
-  const [currentViewMode, setCurrentViewMode] = useState<'code' | 'tree' | 'visual'>(
-    (document.lastViewMode as 'code' | 'tree' | 'visual') || 'code'
-  );
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [hasJsonError, setHasJsonError] = useState(false);
+  const [isDiffMode, setIsDiffMode] = useState(false);
+  const [diffTargetId, setDiffTargetId] = useState<string | null>(null);
 
-  // Validate JSON on content change
+  // Validate JSON syntax on content change
   useEffect(() => {
     try {
       JSON.parse(content);
@@ -67,10 +88,15 @@ export function JsonDocumentEditor({ document, onClose }: JsonDocumentEditorProp
     debouncedSave(document.id, { content: newContent });
   };
 
-  const handleViewModeChange = (mode: string) => {
-    const viewMode = mode as 'code' | 'tree' | 'visual';
-    setCurrentViewMode(viewMode);
-    debouncedSave(document.id, { lastViewMode: viewMode });
+  const toggleFullscreen = () => {
+    setFullscreen(!isFullscreen);
+  };
+
+  const toggleDiffMode = () => {
+    setIsDiffMode(!isDiffMode);
+    if (isDiffMode) {
+      setDiffTargetId(null);
+    }
   };
 
   const handleDelete = async () => {
@@ -88,15 +114,48 @@ export function JsonDocumentEditor({ document, onClose }: JsonDocumentEditorProp
       const formatted = JSON.stringify(parsed, null, 2);
       setContent(formatted);
       debouncedSave(document.id, { content: formatted });
+      toast.success('JSON formatted');
     } catch (error) {
-      // JSON is invalid, don't format
+      toast.error('Cannot format invalid JSON');
+    }
+  };
+
+  const handleExport = async (format: 'pretty' | 'minified') => {
+    try {
+      const response = await fetch(`/api/json-documents/${document.id}/export?format=${format}`);
+
+      if (!response.ok) throw new Error('Export failed');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = window.document.createElement('a');
+      a.href = url;
+      a.download = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+
+      toast.success('Document exported');
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export document');
+    }
+  };
+
+  const handleCopyJson = async (format: 'pretty' | 'minified') => {
+    try {
+      const parsed = JSON.parse(content);
+      const formatted = format === 'pretty' ? JSON.stringify(parsed, null, 2) : JSON.stringify(parsed);
+      await navigator.clipboard.writeText(formatted);
+      toast.success('Copied to clipboard');
+    } catch (error) {
+      toast.error('Failed to copy JSON');
     }
   };
 
   return (
     <>
       <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div className="w-full max-w-6xl h-[90vh] bg-card border border-border rounded-lg shadow-2xl flex flex-col">
+        <div className={`w-full ${isFullscreen ? 'max-w-none h-[calc(100vh-2rem)]' : 'max-w-6xl h-[90vh]'} bg-card border border-border rounded-lg shadow-2xl flex flex-col`}>
           {/* Header */}
           <div className="flex items-center justify-between gap-4 p-4 border-b border-border">
             <div className="flex-1 space-y-2">
@@ -115,41 +174,99 @@ export function JsonDocumentEditor({ document, onClose }: JsonDocumentEditorProp
               />
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
               {/* Save status */}
               <div className="flex items-center gap-2 text-sm">
                 {saveStatus === 'saving' && (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                    <span className="text-muted-foreground">Saving...</span>
+                    <span className="text-muted-foreground hidden sm:inline">Saving...</span>
                   </>
                 )}
                 {saveStatus === 'saved' && (
                   <>
                     <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-green-500">Saved</span>
+                    <span className="text-green-500 hidden sm:inline">Saved</span>
                   </>
                 )}
                 {hasJsonError && (
                   <>
                     <AlertCircle className="h-4 w-4 text-red-500" />
-                    <span className="text-red-500">Invalid JSON</span>
+                    <span className="text-red-500 hidden sm:inline">Invalid JSON</span>
                   </>
                 )}
               </div>
 
-              <Button variant="outline" size="sm" onClick={formatJson} disabled={hasJsonError}>
-                Format
-              </Button>
+              {/* Icon toolbar */}
+              <TooltipProvider>
+                {/* Format button */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" onClick={formatJson} disabled={hasJsonError}>
+                      <FileJson className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Format JSON</TooltipContent>
+                </Tooltip>
 
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowDeleteDialog(true)}
-                className="text-destructive hover:text-destructive"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+                {/* Fullscreen button */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" onClick={toggleFullscreen}>
+                      {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</TooltipContent>
+                </Tooltip>
+
+                {/* Diff button */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={toggleDiffMode}
+                      className={isDiffMode ? 'bg-accent' : ''}
+                    >
+                      <GitCompare className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Compare Documents</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              {/* More menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={() => handleCopyJson('pretty')}>
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copy (Pretty)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleCopyJson('minified')}>
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copy (Minified)
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => handleExport('pretty')}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Export (Pretty)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExport('minified')}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Export (Minified)
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setShowDeleteDialog(true)}>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
               <Button variant="ghost" size="icon" onClick={onClose}>
                 <X className="h-4 w-4" />
@@ -157,21 +274,28 @@ export function JsonDocumentEditor({ document, onClose }: JsonDocumentEditorProp
             </div>
           </div>
 
-          {/* Editor Tabs */}
-          <Tabs value={currentViewMode} onValueChange={handleViewModeChange} className="flex-1 flex flex-col">
-            <div className="border-b border-border px-4">
-              <TabsList className="bg-transparent">
-                <TabsTrigger value="code">Code</TabsTrigger>
-                <TabsTrigger value="tree" disabled>
-                  Tree
-                </TabsTrigger>
-                <TabsTrigger value="visual" disabled={!document.schemaId}>
-                  Visual
-                </TabsTrigger>
-              </TabsList>
-            </div>
+          {/* Editor Area */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {isDiffMode && (
+              <div className="px-4 py-2 border-b border-border">
+                <Select value={diffTargetId || ''} onValueChange={setDiffTargetId}>
+                  <SelectTrigger className="w-full max-w-md">
+                    <SelectValue placeholder="Select document to compare..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {documents
+                      .filter(d => d.id !== document.id)
+                      .map(doc => (
+                        <SelectItem key={doc.id} value={doc.id}>
+                          {doc.title}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
-            <TabsContent value="code" className="flex-1 m-0 p-0">
+            <div className="flex-1 overflow-hidden">
               <Suspense
                 fallback={
                   <div className="flex items-center justify-center h-full">
@@ -179,22 +303,25 @@ export function JsonDocumentEditor({ document, onClose }: JsonDocumentEditorProp
                   </div>
                 }
               >
-                <JsonCodeEditor value={content} onChange={handleContentChange} />
+                {isDiffMode && diffTargetId ? (
+                  <DiffEditor
+                    original={content}
+                    modified={documents.find(d => d.id === diffTargetId)?.content || ''}
+                    language="json"
+                    theme="vs-dark"
+                    options={{
+                      readOnly: true,
+                      renderSideBySide: true,
+                      minimap: { enabled: false },
+                      scrollBeyondLastLine: false,
+                    }}
+                  />
+                ) : (
+                  <JsonCodeEditor value={content} onChange={handleContentChange} />
+                )}
               </Suspense>
-            </TabsContent>
-
-            <TabsContent value="tree" className="flex-1 m-0 p-4">
-              <div className="flex items-center justify-center h-full text-muted-foreground">
-                Tree view coming soon...
-              </div>
-            </TabsContent>
-
-            <TabsContent value="visual" className="flex-1 m-0 p-4">
-              <div className="flex items-center justify-center h-full text-muted-foreground">
-                Visual editor coming soon...
-              </div>
-            </TabsContent>
-          </Tabs>
+            </div>
+          </div>
         </div>
       </div>
 

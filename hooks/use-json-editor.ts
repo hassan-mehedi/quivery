@@ -6,35 +6,25 @@ import { debounce } from '@/lib/utils';
 export function useJsonEditor() {
   const {
     documents,
-    schemas,
     selectedDocument,
     isLoading,
     setDocuments,
-    setSchemas,
     addDocument,
     updateDocument,
     deleteDocument,
     selectDocument,
-    addSchema,
-    updateSchema,
-    deleteSchema,
     setLoading,
     searchQuery,
   } = useJsonEditorStore();
 
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
-  const [validationStatus, setValidationStatus] = useState<{
-    valid: boolean;
-    errors: any[];
-  } | null>(null);
 
   const fetchDocuments = useCallback(
-    async (search?: string, schemaId?: string) => {
+    async (search?: string) => {
       try {
         setLoading(true);
         const params = new URLSearchParams();
         if (search) params.set('search', search);
-        if (schemaId) params.set('schemaId', schemaId);
 
         const response = await fetch(`/api/json-documents?${params}`);
 
@@ -60,30 +50,8 @@ export function useJsonEditor() {
     [setDocuments, setLoading]
   );
 
-  const fetchSchemas = useCallback(async () => {
-    try {
-      const response = await fetch('/api/json-schemas');
-
-      if (!response.ok) {
-        if (response.status === 429) {
-          toast.error('Too many requests. Please slow down and try again in a moment.');
-          return;
-        }
-        const errorData = await response.json().catch(() => ({ error: 'Failed to fetch schemas' }));
-        throw new Error(errorData.error || 'Failed to fetch schemas');
-      }
-
-      const data = await response.json();
-      setSchemas(data);
-    } catch (error) {
-      console.error('Error fetching schemas:', error);
-      const message = error instanceof Error ? error.message : 'Failed to fetch schemas';
-      toast.error(message);
-    }
-  }, [setSchemas]);
-
   const createDocument = useCallback(
-    async (title: string, content?: string, description?: string, schemaId?: string) => {
+    async (title: string, content?: string, description?: string) => {
       try {
         // Validate JSON syntax
         if (content) {
@@ -102,7 +70,6 @@ export function useJsonEditor() {
             title,
             content: content || '{}',
             description,
-            schemaId
           }),
         });
 
@@ -129,8 +96,6 @@ export function useJsonEditor() {
       title?: string;
       content?: string;
       description?: string;
-      schemaId?: string;
-      lastViewMode?: string;
     }) => {
       try {
         // Validate JSON syntax if content is being updated
@@ -174,8 +139,6 @@ export function useJsonEditor() {
         title?: string;
         content?: string;
         description?: string;
-        schemaId?: string;
-        lastViewMode?: string;
       }) => {
         try {
           // Validate JSON syntax if content is being updated
@@ -215,8 +178,6 @@ export function useJsonEditor() {
       title?: string;
       content?: string;
       description?: string;
-      schemaId?: string;
-      lastViewMode?: string;
     }) => {
       setSaveStatus('saving');
       debouncedSaveRef.current(id, updates);
@@ -244,61 +205,34 @@ export function useJsonEditor() {
     [deleteDocument]
   );
 
-  const createSchema = useCallback(
-    async (name: string, schema: string, description?: string, version?: string) => {
+  const importDocument = useCallback(
+    async (file: File) => {
       try {
-        // Validate that schema is valid JSON
-        try {
-          JSON.parse(schema);
-        } catch (e) {
-          toast.error('Invalid JSON Schema format');
-          throw new Error('Invalid JSON Schema format');
-        }
+        const formData = new FormData();
+        formData.append('file', file);
 
-        const response = await fetch('/api/json-schemas', {
+        const response = await fetch('/api/json-documents/import', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, schema, description, version }),
+          body: formData,
         });
 
         if (!response.ok) {
           const error = await response.json();
-          throw new Error(error.error || 'Failed to create schema');
+          throw new Error(error.error || 'Failed to import document');
         }
 
-        const newSchema = await response.json();
-        addSchema(newSchema);
-        toast.success('Schema created successfully');
-        return newSchema;
+        const newDocument = await response.json();
+        addDocument(newDocument);
+        selectDocument(newDocument);
+        toast.success('Document imported successfully');
+        return newDocument;
       } catch (error) {
-        console.error('Error creating schema:', error);
-        if (error instanceof Error && error.message !== 'Invalid JSON Schema format') {
-          toast.error(error.message);
-        }
+        console.error('Error importing document:', error);
+        toast.error(error instanceof Error ? error.message : 'Failed to import document');
         throw error;
       }
     },
-    [addSchema]
-  );
-
-  const removeSchema = useCallback(
-    async (id: string) => {
-      try {
-        const response = await fetch(`/api/json-schemas/${id}`, {
-          method: 'DELETE',
-        });
-
-        if (!response.ok) throw new Error('Failed to delete schema');
-
-        deleteSchema(id);
-        toast.success('Schema deleted successfully');
-      } catch (error) {
-        console.error('Error deleting schema:', error);
-        toast.error('Failed to delete schema');
-        throw error;
-      }
-    },
-    [deleteSchema]
+    [addDocument, selectDocument]
   );
 
   const updateDocumentsOrder = useCallback(async (updates: { id: string; order: number }[]) => {
@@ -321,22 +255,17 @@ export function useJsonEditor() {
 
   return {
     documents,
-    schemas,
     selectedDocument,
     isLoading,
     saveStatus,
-    validationStatus,
     searchQuery,
     fetchDocuments,
-    fetchSchemas,
     createDocument,
     editDocument,
     debouncedSave,
     removeDocument,
-    createSchema,
-    removeSchema,
+    importDocument,
     updateDocumentsOrder,
     selectDocument,
-    setValidationStatus,
   };
 }

@@ -1379,6 +1379,20 @@
     "@radix-ui/react-use-previous" "1.1.1"
     "@radix-ui/react-use-size" "1.1.1"
 
+"@radix-ui/react-collapsible@^1.1.12":
+  version "1.1.12"
+  resolved "https://registry.npmjs.org/@radix-ui/react-collapsible/-/react-collapsible-1.1.12.tgz"
+  integrity sha512-Uu+mSh4agx2ib1uIGPP4/CKNULyajb3p92LsVXmH2EHVMTfZWpll88XJ0j4W0z3f8NK1eYl1+Mf/szHPmcHzyA==
+  dependencies:
+    "@radix-ui/primitive" "1.1.3"
+    "@radix-ui/react-compose-refs" "1.1.2"
+    "@radix-ui/react-context" "1.1.2"
+    "@radix-ui/react-id" "1.1.1"
+    "@radix-ui/react-presence" "1.1.5"
+    "@radix-ui/react-primitive" "2.1.3"
+    "@radix-ui/react-use-controllable-state" "1.2.2"
+    "@radix-ui/react-use-layout-effect" "1.1.1"
+
 "@radix-ui/react-collection@1.1.7":
   version "1.1.7"
   resolved "https://registry.npmjs.org/@radix-ui/react-collection/-/react-collection-1.1.7.tgz"
@@ -2523,7 +2537,7 @@ ajv@^6.12.4, ajv@^6.9.1:
     json-schema-traverse "^0.4.1"
     uri-js "^4.2.2"
 
-ajv@^8.0.0, ajv@^8.12.0, ajv@^8.6.0, ajv@^8.8.2, ajv@^8.9.0, ajv@>=8:
+ajv@^8.0.0, ajv@^8.6.0, ajv@^8.8.2, ajv@^8.9.0, ajv@>=8:
   version "8.17.1"
   resolved "https://registry.npmjs.org/ajv/-/ajv-8.17.1.tgz"
   integrity sha512-B/gBuNg5SiMTrPkC+A2+cW0RszwxYmn6VYxB/inlBStS5nx6xHIt/ehKRhIMhqusl7a8LjQoZnjCs5vhwxOQ1g==
@@ -4452,14 +4466,6 @@ json-diff-kit@^1.0.0:
   optionalDependencies:
     terminal-kit "^3.0.1"
 
-json-edit-react@^1.15.3:
-  version "1.29.0"
-  resolved "https://registry.npmjs.org/json-edit-react/-/json-edit-react-1.29.0.tgz"
-  integrity sha512-qxho/m0w6GCaKLic6XsZgmCrKKwluMvoy92teRBRus1PRHJQiP4pkFQJ90lmrno1KNgSePYIG0mcscS0GjdH3A==
-  dependencies:
-    object-property-assigner "^1.3.5"
-    object-property-extractor "^1.0.13"
-
 json-parse-even-better-errors@^2.3.1:
   version "2.3.1"
   resolved "https://registry.npmjs.org/json-parse-even-better-errors/-/json-parse-even-better-errors-2.3.1.tgz"
@@ -4996,16 +5002,6 @@ object-keys@^1.1.1:
   version "1.1.1"
   resolved "https://registry.npmjs.org/object-keys/-/object-keys-1.1.1.tgz"
   integrity sha512-NuAESUOUMrlIXOfHKzD6bpPu3tYt3xvjNdRIQ+FeT0lNb4K8WR70CaDxhuNguS2XG+GjkyMwOzsN5ZktImfhLA==
-
-object-property-assigner@^1.3.5:
-  version "1.3.5"
-  resolved "https://registry.npmjs.org/object-property-assigner/-/object-property-assigner-1.3.5.tgz"
-  integrity sha512-DIzHzNSTnpoG8QPQCDNrHa6O3vLMhktK3Igirqpk523UYIVe8JNCKcn5C9WyLQxJc58EGsAIiiEu10gqPrud8w==
-
-object-property-extractor@^1.0.13:
-  version "1.0.13"
-  resolved "https://registry.npmjs.org/object-property-extractor/-/object-property-extractor-1.0.13.tgz"
-  integrity sha512-9kgEjTWDhTPuPn7nyof+5mLmCKBPKdU0c7IVpTbOvYKYSdXQ5skH4Pa/8MPbZXeyXBGrqS82JyWecsh6tMxiLw==
 
 object.assign@^4.1.4, object.assign@^4.1.7:
   version "4.1.7"
@@ -5663,7 +5659,7 @@ react-swipeable@^7.0.2:
   resolved "https://registry.npmjs.org/react-swipeable/-/react-swipeable-7.0.2.tgz"
   integrity sha512-v1Qx1l+aC2fdxKa9aKJiaU/ZxmJ5o98RMoFwUqAAzVWUcxgfHFXDDruCKXhw6zIYXm6V64JiHgP9f6mlME5l8w==
 
-"react@^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react@^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react@^16.8.3 || ^17 || ^18 || ^19.0.0 || ^19.0.0-rc", "react@^17.0.0 || ^18.0.0 || ^19.0.0", "react@^17.0.2 || ^18 || ^19", "react@^18.0.0 || ^19.0.0", "react@^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react@^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0", react@^19.2.3, "react@>= 16.8.0 || 17.x.x || ^18.0.0-0 || ^19.0.0-0", react@>=16.0.0, react@>=16.8.0, react@>=18.0.0, react@19.2.3:
+"react@^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react@^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react@^16.8.3 || ^17 || ^18 || ^19.0.0 || ^19.0.0-rc", "react@^17.0.0 || ^18.0.0 || ^19.0.0", "react@^17.0.2 || ^18 || ^19", "react@^18.0.0 || ^19.0.0", "react@^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react@^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0", react@^19.2.3, "react@>= 16.8.0 || 17.x.x || ^18.0.0-0 || ^19.0.0-0", react@>=16.8.0, react@>=18.0.0, react@19.2.3:
   version "19.2.3"
   resolved "https://registry.npmjs.org/react/-/react-19.2.3.tgz"
   integrity sha512-Ku/hhYbVjOQnXDZFv2+RibmLFGwFdeeKHFcOTlrt7xplBnya5OGn/hIRDsqDiSUcfORsDC7MPxwork8jBwsIWA==

@@ -1,24 +1,19 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { JsonDocument, JsonSchema } from '@prisma/client';
+import { JsonDocument } from '@prisma/client';
 
-export type JsonDocumentWithSchema = JsonDocument & {
-  schema: JsonSchema | null;
-};
-
-export type ViewMode = 'code' | 'tree' | 'visual';
+export type JsonDocumentSimplified = JsonDocument;
 
 interface JsonEditorState {
   // Data
-  documents: JsonDocumentWithSchema[];
-  schemas: JsonSchema[];
-  selectedDocument: JsonDocumentWithSchema | null;
+  documents: JsonDocumentSimplified[];
+  selectedDocument: JsonDocumentSimplified | null;
 
   // UI State
   isLoading: boolean;
   error: string | null;
   searchQuery: string;
-  defaultViewMode: ViewMode;
+  isFullscreen: boolean;
 
   // Comparison mode
   isComparisonMode: boolean;
@@ -26,19 +21,14 @@ interface JsonEditorState {
   comparisonRightId: string | null;
 
   // Actions
-  setDocuments: (documents: JsonDocumentWithSchema[]) => void;
-  setSchemas: (schemas: JsonSchema[]) => void;
-  addDocument: (document: JsonDocumentWithSchema) => void;
-  updateDocument: (id: string, updates: Partial<JsonDocumentWithSchema>) => void;
+  setDocuments: (documents: JsonDocumentSimplified[]) => void;
+  addDocument: (document: JsonDocumentSimplified) => void;
+  updateDocument: (id: string, updates: Partial<JsonDocumentSimplified>) => void;
   deleteDocument: (id: string) => void;
-  selectDocument: (document: JsonDocumentWithSchema | null) => void;
-
-  addSchema: (schema: JsonSchema) => void;
-  updateSchema: (id: string, updates: Partial<JsonSchema>) => void;
-  deleteSchema: (id: string) => void;
+  selectDocument: (document: JsonDocumentSimplified | null) => void;
 
   setSearchQuery: (query: string) => void;
-  setDefaultViewMode: (mode: ViewMode) => void;
+  setFullscreen: (fullscreen: boolean) => void;
 
   setComparisonMode: (enabled: boolean) => void;
   setComparisonLeft: (id: string | null) => void;
@@ -53,12 +43,11 @@ export const useJsonEditorStore = create<JsonEditorState>()(
     set => ({
       // Initial state
       documents: [],
-      schemas: [],
       selectedDocument: null,
       isLoading: false,
       error: null,
       searchQuery: '',
-      defaultViewMode: 'code',
+      isFullscreen: false,
       isComparisonMode: false,
       comparisonLeftId: null,
       comparisonRightId: null,
@@ -81,21 +70,9 @@ export const useJsonEditorStore = create<JsonEditorState>()(
         })),
       selectDocument: document => set({ selectedDocument: document }),
 
-      // Schema actions
-      setSchemas: schemas => set({ schemas }),
-      addSchema: schema => set(state => ({ schemas: [...state.schemas, schema] })),
-      updateSchema: (id, updates) =>
-        set(state => ({
-          schemas: state.schemas.map(s => (s.id === id ? { ...s, ...updates } : s)),
-        })),
-      deleteSchema: id =>
-        set(state => ({
-          schemas: state.schemas.filter(s => s.id !== id),
-        })),
-
       // UI actions
       setSearchQuery: searchQuery => set({ searchQuery }),
-      setDefaultViewMode: defaultViewMode => set({ defaultViewMode }),
+      setFullscreen: isFullscreen => set({ isFullscreen }),
 
       // Comparison actions
       setComparisonMode: isComparisonMode =>
@@ -115,7 +92,7 @@ export const useJsonEditorStore = create<JsonEditorState>()(
     }),
     {
       name: 'json-editor-storage',
-      partialize: state => ({ defaultViewMode: state.defaultViewMode }),
+      partialize: state => ({ isFullscreen: state.isFullscreen }),
     }
   )
 );

@@ -20,7 +20,6 @@ model User {
   tags          Tag[]
   projects      Project[]
   jsonDocuments JsonDocument[]
-  jsonSchemas   JsonSchema[]
 }
 
 model Todo {
@@ -142,42 +141,15 @@ model JsonDocument {
   description String?
   sortOrder   Int       @default(0)
 
-  lastViewMode String   @default("code")
-
-  schemaId    String?
-  isValid     Boolean   @default(true)
-
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
   userId      String
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  schema      JsonSchema? @relation(fields: [schemaId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([userId, sortOrder])
   @@index([userId, title])
-  @@index([schemaId])
-}
-
-model JsonSchema {
-  id          String    @id @default(cuid())
-  name        String
-  description String?
-  schema      String    @db.Text
-  version     String    @default("draft-07")
-
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  userId      String
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  documents   JsonDocument[]
-
-  @@unique([name, userId])
-  @@index([userId])
 }
 
 enum TodoStatus {
